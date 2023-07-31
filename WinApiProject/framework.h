@@ -13,3 +13,11 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+
+#include <ole2.h>
+#include <ctime>
+#include <vector>
+#include <iostream>
+#include <string>
+#include <gdiplus.h>
+#include "Objects.h"

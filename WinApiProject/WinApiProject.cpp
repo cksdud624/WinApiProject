@@ -4,12 +4,34 @@
 #include "framework.h"
 #include "WinApiProject.h"
 
+using namespace std;
+using namespace Gdiplus;
+
+#pragma comment(lib, "gdiplus.lib") 
 #define MAX_LOADSTRING 100
+
+ULONG_PTR m_gdiplusToken;
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+
+
+#ifdef UNICODE
+
+#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console") 
+
+#else
+
+#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console") 
+
+#endif
+
+
+
+//함수
+void Update();
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -42,15 +64,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
+    clock_t oldtime = clock();
+    clock_t newtime;
+
     // 기본 메시지 루프입니다:
-    while (GetMessage(&msg, nullptr, 0, 0))
+    while (true)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            if (msg.message == WM_QUIT)
+            {
+                break;
+            }
+            else
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        else
+        {
+            newtime = clock();
+            if (newtime - oldtime >= 34)
+            {
+                oldtime = newtime;
+                Update();
+            }
         }
     }
+    GdiplusShutdown(m_gdiplusToken);
 
     return (int) msg.wParam;
 }
@@ -93,12 +135,17 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        이 함수를 통해 인스턴스 핸들을 전역 변수에 저장하고
 //        주 프로그램 창을 만든 다음 표시합니다.
 //
+static HWND hWnd;
+
+
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
+   GdiplusStartupInput gdiplusStartupInput;
+   GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+   hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPED | WS_SYSMENU,
+      500, 50, 1016, 1059, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -121,10 +168,30 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
+
+RECT rectView;
+
+const POINT Grids = { 25, 25 };//맵의 격자의 갯수
+
+int GridXSize;
+int GridYSize;
+
+Player player;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+    {
+        GetClientRect(hWnd, &rectView);
+        GridXSize = rectView.right / Grids.x;
+        GridYSize = rectView.bottom / Grids.y;
+
+        player.setX(rectView.right / 2);
+        player.setY(rectView.bottom / 2);
+    }
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -147,6 +214,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
             EndPaint(hWnd, &ps);
         }
         break;
@@ -158,6 +226,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
+
+
+void Update()
+{
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // 정보 대화 상자의 메시지 처리기입니다.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
