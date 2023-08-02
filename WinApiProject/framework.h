@@ -21,3 +21,4 @@
 #include <string>
 #include <gdiplus.h>
 #include "Objects.h"
+#include "Tools.h"

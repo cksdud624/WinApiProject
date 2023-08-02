@@ -32,6 +32,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 //함수
 void Update();
+void DrawDoubleBuffering(HDC& hdc);
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -92,6 +93,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
     }
+
     GdiplusShutdown(m_gdiplusToken);
 
     return (int) msg.wParam;
@@ -178,6 +180,9 @@ int GridYSize;
 
 Player player;
 
+HDC mem1dc;
+HBITMAP hBit, oldBit;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -190,6 +195,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         player.setX(rectView.right / 2);
         player.setY(rectView.bottom / 2);
+        player.setSpeed(10);
     }
         break;
     case WM_COMMAND:
@@ -214,6 +220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+            DrawDoubleBuffering(hdc);
 
             EndPaint(hWnd, &ps);
         }
@@ -230,9 +237,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void Update()
 {
+    player.movePos(PlayerMove());//플레이어 이동
+    
 
+
+
+
+
+
+    InvalidateRect(hWnd, NULL, FALSE);//더블 버퍼링
 }
 
+void DrawDoubleBuffering(HDC& hdc)
+{
+    mem1dc = CreateCompatibleDC(hdc);
+    if (hBit == NULL)
+        hBit = CreateCompatibleBitmap(hdc, rectView.right, rectView.bottom);
+    oldBit = (HBITMAP)SelectObject(mem1dc, hBit);
+
+    FillRect(mem1dc, &rectView, NULL);
+
+
+    Ellipse(mem1dc, player.getX() - 10, player.getY() - 10,
+        player.getX() + 10, player.getY() + 10);
+
+
+    BitBlt(hdc, 0, 0, rectView.right, rectView.bottom, mem1dc, 0, 0, SRCCOPY);
+    SelectObject(mem1dc, oldBit);
+    DeleteDC(mem1dc);
+}
 
 
 
