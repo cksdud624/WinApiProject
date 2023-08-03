@@ -19,6 +19,9 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <cmath>
 #include <gdiplus.h>
 #include "Objects.h"
 #include "Tools.h"
+
+#pragma comment(lib, "gdiplus.lib") 
