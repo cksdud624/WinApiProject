@@ -4,6 +4,22 @@
 #include <vector>
 
 using namespace std;
+
+Player::Player()
+{
+	spriteX = 1;
+	spriteY = 3;
+	frame = 3;
+	mdirection = 2;
+
+	attackPoints = new POINT[4];
+}
+
+Player::~Player()
+{
+	delete[] attackPoints;
+}
+
 void Player::movePos(int pos)
 {
 	float move = 1;
@@ -16,7 +32,7 @@ void Player::movePos(int pos)
 	}
 	else
 	{
-		(*this).pcount--;
+		pcount--;
 		move *= 3;
 	}
 	switch (mpos)
@@ -63,29 +79,12 @@ void Player::movePos(int pos)
 			walking = 3 - walking;
 		else
 			walking = 1;
+		mdirection = mpos;
 	}
 }
 
-void Player::action(Rect& rect, Graphics& g, Image*& playeraction)
+void Player::spriteNFrame()
 {
-	ColorMatrix colorMatrix = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-						   0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-						   0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-						   0.0f, 0.0f, 0.0f, 0.2f, 0.0f,
-						   0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
-	ImageAttributes imageAtt;
-	imageAtt.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault,
-		ColorAdjustTypeBitmap);
-
-
-	rect.Width = width * 2;
-	rect.Height = height * 2;
-
-	static int spriteX = 1;
-	static int spriteY = 3;
-	static int frame = 3;
-
-	static vector<Point> illusion;
 	if (pcount > 0)
 	{
 		Point tempP;
@@ -120,18 +119,24 @@ void Player::action(Rect& rect, Graphics& g, Image*& playeraction)
 	}
 	else
 		frame--;
+}
+
+void Player::action(Rect& rect, Graphics& g, Image*& playerAction, ImageAttributes*& imageAtt)
+{
+	rect.Width = width * 2;
+	rect.Height = height * 2;
 
 	for (int i = 0; i < illusion.size(); i++)
 	{
 
 		rect.X = illusion[i].X - width;
 		rect.Y = illusion[i].Y - height;
-		g.DrawImage(playeraction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel, &imageAtt);
+		g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel, imageAtt);
 	}
 
 	rect.X = x - width;
 	rect.Y = y - height;
-	g.DrawImage(playeraction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
+	g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
 }
 
 void Player::correctPosition(RECT& rectView)
@@ -144,4 +149,73 @@ void Player::correctPosition(RECT& rectView)
 		y = rectView.top + height;
 	if (y + height > rectView.bottom)
 		y = rectView.bottom - height;
+}
+
+void Player::attackCollide()
+{
+	if (GetKeyState(VK_LCONTROL) < 0 && swordframe <= 0)
+		swordframe = 4;
+	if (swordframe > 0)
+	{
+		swordframe--;
+		double line = sqrt(1600 + 10000);
+
+		double endangle = acos(40 / line);//°¢µµ
+		int angle = 0;
+		if (mdirection == 1)
+			angle = 45;
+		else if (mdirection == 2)
+			angle = 0;
+		else if (mdirection == 3)
+			angle = 315;
+		else if (mdirection == 4)
+			angle = 90;
+		else if (mdirection == 6)
+			angle = 270;
+		else if (mdirection == 7)
+			angle = 135;
+		else if (mdirection == 8)
+			angle = 180;
+		else if (mdirection == 9)
+			angle = 225;
+		attackPoints[0].x = x;
+		attackPoints[0].y = y;
+		attackPoints[1].x = x + 40 * cos(angle * 3.14 / 180);
+		attackPoints[1].y = y - 40 * sin(angle * 3.14 / 180);
+		attackPoints[2].x = x + line * cos(angle * 3.14 / 180 + endangle);
+		attackPoints[2].y = y - line * sin(angle * 3.14 / 180 + endangle);
+		attackPoints[3].x = x + 100 * cos((angle + 90) * 3.14 / 180);
+		attackPoints[3].y = y - 100 * sin((angle + 90) * 3.14 / 180);
+	}
+
+}
+
+void Player::attack(Rect& rect, Graphics& g, Image*& swordAction)
+{
+	if (swordframe > 0)
+	{
+		Matrix temp;
+		rect.Width = 150;
+		rect.Height = 150;
+		rect.X = x - rect.Width / 2 - 10;
+		rect.Y = y - rect.Height / 2 + 30;
+		if (mdirection == 1)
+			temp.RotateAt(135, PointF(x, y));
+		else if (mdirection == 2)
+			temp.RotateAt(180, PointF(x, y));
+		else if (mdirection == 3)
+			temp.RotateAt(225, PointF(x, y));
+		else if (mdirection == 4)
+			temp.RotateAt(90, PointF(x, y));
+		else if (mdirection == 6)
+			temp.RotateAt(270, PointF(x, y));
+		else if (mdirection == 7)
+			temp.RotateAt(45, PointF(x, y));
+		else if (mdirection == 8)
+			temp.RotateAt(0, PointF(x, y));
+		else if (mdirection == 9)
+			temp.RotateAt(315, PointF(x, y));
+		g.SetTransform(&temp);
+		g.DrawImage(swordAction, rect, 72 * (4 - swordframe), 0, 72, 72, UnitPixel);
+	}
 }

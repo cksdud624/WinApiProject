@@ -183,10 +183,19 @@ HDC mem1dc;
 
 HBITMAP hBit, oldBit;
 
-Image* playeraction;
+Image* playerAction;
+Image* swordAction;
 Rect rect;
 
 int startsetting = 1;
+
+ColorMatrix illusionMatrix = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                           0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+                           0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                           0.0f, 0.0f, 0.0f, 0.2f, 0.0f,
+                           0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+
+ImageAttributes* imageAtt;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -203,7 +212,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         player.setSpeed(10);
         player.setWidth(20);
         player.setHeight(27);
-        playeraction = Image::FromFile(L"images/player.png");
+        playerAction = Image::FromFile(L"images/player.png");
+        swordAction = Image::FromFile(L"images/sword.png");
     }
         break;
     case WM_COMMAND:
@@ -250,21 +260,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
-
-
 void Update()
 {
     player.movePos(PlayerMove());//플레이어 이동
-    player.correctPosition(rectView);
+    player.correctPosition(rectView);//맵 밖으로 나가지 않게 함
+    player.spriteNFrame();//스프라이트와 프레임 설정
+    player.attackCollide();//공격 충돌 판정
+
+
     InvalidateRect(hWnd, NULL, FALSE);
 }
 
 void DrawDoubleBuffering(HDC& hdc)
 {
-    FillRect(mem1dc, &rectView, NULL);
+    FillRect(mem1dc, &rectView, (HBRUSH)(COLOR_WINDOW + 2));
     Graphics g(mem1dc);
+    player.action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
+    player.attack(rect, g, swordAction);//공격 애니메이션
 
-    player.action(rect, g, playeraction);//플레이어 애니메이션
+    
+
 
     BitBlt(hdc, 0, 0, rectView.right, rectView.bottom, mem1dc, 0, 0, SRCCOPY);
 }
@@ -275,6 +290,9 @@ void StartSetting(HDC& hdc)
     if (hBit == NULL)
         hBit = CreateCompatibleBitmap(hdc, rectView.right, rectView.bottom);
     oldBit = (HBITMAP)SelectObject(mem1dc, hBit);
+    imageAtt = new ImageAttributes;
+    imageAtt->SetColorMatrix(&illusionMatrix, ColorMatrixFlagsDefault,
+        ColorAdjustTypeBitmap);
 }
 
 
