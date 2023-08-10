@@ -23,5 +23,6 @@
 #include <gdiplus.h>
 #include "Objects.h"
 #include "Tools.h"
+#include "UIItems.h"
 
 #pragma comment(lib, "gdiplus.lib") 

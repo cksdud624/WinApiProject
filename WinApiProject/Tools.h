@@ -23,3 +23,19 @@ int PlayerMove()
 
     return playermove;
 }
+
+
+void CheckArrowOutofArea(vector<Arrow>& arrows, RECT& rectView)
+{
+    for (int i = 0; i < arrows.size(); i++)
+    {
+        if (arrows[i].getX() > rectView.right
+            || arrows[i].getX() < rectView.left
+            || arrows[i].getY() > rectView.bottom
+            || arrows[i].getY() < rectView.top)
+        {
+            arrows.erase(arrows.begin() + i);
+            i = -1;
+        }
+    }
+}

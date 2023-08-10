@@ -3,9 +3,44 @@
 #include <Windows.h>
 #include <gdiplus.h>
 #include <vector>
+#include "UIItems.h"
 
 using namespace Gdiplus;
 using namespace std;
+
+class Arrow
+{
+private:
+	double x;
+	double y;
+
+	int speed;
+	int width;
+	int height;
+	int angle;
+	POINT* Collider;
+public:
+	double getX() { return x; }
+	double getY() { return y; }
+	int getSpeed() { return speed; }
+	int getWidth() { return width; }
+	int getHeight() { return height; }
+	int getAngle() { return angle; }
+
+	POINT* getCollider() { return Collider; }
+
+	void setX(double x) { this->x = x; }
+	void setY(double y) { this->y = y; }
+	void setSpeed(int speed) { this->speed = speed; }
+	void setWidth(int width) { this->width = width; }
+	void setHeight(int height) { this->height = height; }
+	void setAngle(int angle) { this->angle = angle; }
+
+	void setNewCollider();
+	void setCollider();
+	void movePos();
+};
+
 
 class Player
 {
@@ -27,19 +62,22 @@ private:
 	int spriteY;
 	int frame;
 
-	int swordframe;
-	int swordSpriteX;
+	int weapon;//무기 -> 1: 검 2: 창 3: 활
+
+	int attackframe;
+	int attackSpriteX;
 
 	vector<Point> illusion;
 	POINT* attackPoints;
 
 
+	int attackCoolDown;
+	int leftAttackCoolDown;
+
 public:
-
-
-
 	Player();
 	~Player();
+
 	double getX() { return x; }
 	double getY() { return y; }
 	int getSpeed() { return speed; }
@@ -51,7 +89,8 @@ public:
 	int getSpriteX() { return spriteX; }
 	int getSpriteY() { return spriteY; }
 	int getFrame() { return frame; }
-	int getSwordFrame() { return swordframe; }
+	int getAttackFrame() { return attackframe; }
+	int getWeaponType() { return weapon; }
 
 	POINT* getAttackPoints() { return attackPoints; }
 
@@ -75,6 +114,9 @@ public:
 
 	void correctPosition(RECT& rectView);//맵 밖으로 나가게하지 못함
 
-	void attackCollide();//공격 충돌 판정
-	void attack(Rect& rect, Graphics& g, Image*& swordAction);//공격 애니메이션
+	void attackCollide(vector<Arrow>& arrows);//공격 충돌 판정
+	void attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrowAction  ,vector<Arrow>& arrows);//공격 애니메이션
+
+
+	int changeWeapon(UIIcon& WeaponIcon);//무기 변경
 };

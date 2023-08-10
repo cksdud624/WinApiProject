@@ -132,10 +132,12 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Tools.h" />
+    <ClInclude Include="UIItems.h" />
     <ClInclude Include="WinApiProject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Objects.cpp" />
+    <ClCompile Include="UIItems.cpp" />
     <ClCompile Include="WinApiProject.cpp" />
   </ItemGroup>
   <ItemGroup>

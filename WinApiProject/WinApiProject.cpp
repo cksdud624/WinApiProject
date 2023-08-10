@@ -32,6 +32,9 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 void Update();
 void DrawDoubleBuffering(HDC& hdc);
 void StartSetting(HDC& hdc);
+void PlayerSystem();
+void PlayerDraw(Graphics& g);
+void UISetting();
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -146,7 +149,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPED | WS_SYSMENU,
-      500, 50, 1016, 1059, nullptr, nullptr, hInstance, nullptr);
+      500, 0, 1016, 1159, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -169,32 +172,50 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
-
+//게임 화면
 RECT rectView;
+//게임 UI 화면
+RECT rectViewUI;
 
-const POINT Grids = { 25, 25 };//맵의 격자의 갯수
+Rect rect;
 
+//맵의 격자의 갯수
+const POINT Grids = { 25, 25 };
+
+//턴제 격자 사이즈
 int GridXSize;
 int GridYSize;
 
+//UI를 다시 그림
+int UIDraw = 0;
+
+//플레이어
 Player player;
-
+vector<Arrow> arrows;//화살
+//더블 버퍼링
 HDC mem1dc;
-
+HDC hdc;
 HBITMAP hBit, oldBit;
 
+//이미지
 Image* playerAction;
 Image* swordAction;
-Rect rect;
+Image* spearAction;
+Image* UIImage;
+Image* UIBackground;
+Image* arrowAction;
 
+UIIcon Background;
+UIIcon WeaponIcon;
+//게임 시작 시 설정
 int startsetting = 1;
 
+//잔상 반투명화
 ColorMatrix illusionMatrix = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                            0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
                            0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
                            0.0f, 0.0f, 0.0f, 0.2f, 0.0f,
                            0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
-
 ImageAttributes* imageAtt;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -204,16 +225,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
     {
         GetClientRect(hWnd, &rectView);
+        rectViewUI.top = rectView.bottom - 100;
+        rectViewUI.bottom = rectView.bottom;
+        rectViewUI.right = rectView.right;
+        rectViewUI.left = rectView.left;
+        rectView.bottom -= 100;//게임 화면과 UI 화면 분리
+
+        //UI화면은 비동기적으로 움직임
+
+
+
         GridXSize = rectView.right / Grids.x;
         GridYSize = rectView.bottom / Grids.y;
 
         player.setX(rectView.right / 2);
         player.setY(rectView.bottom / 2);
-        player.setSpeed(10);
-        player.setWidth(20);
-        player.setHeight(27);
         playerAction = Image::FromFile(L"images/player.png");
         swordAction = Image::FromFile(L"images/sword.png");
+        spearAction = Image::FromFile(L"images/spear.png");
+        arrowAction = Image::FromFile(L"images/arrow.png");
+        UIImage = Image::FromFile(L"images/UIImage.png");
+        UIBackground = Image::FromFile(L"images/UIBackground.png");
     }
         break;
     case WM_COMMAND:
@@ -236,7 +268,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+            hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             if (startsetting == 1)
             {
@@ -262,11 +294,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 void Update()
 {
-    player.movePos(PlayerMove());//플레이어 이동
-    player.correctPosition(rectView);//맵 밖으로 나가지 않게 함
-    player.spriteNFrame();//스프라이트와 프레임 설정
-    player.attackCollide();//공격 충돌 판정
 
+    PlayerSystem();
 
     InvalidateRect(hWnd, NULL, FALSE);
 }
@@ -275,30 +304,72 @@ void DrawDoubleBuffering(HDC& hdc)
 {
     FillRect(mem1dc, &rectView, (HBRUSH)(COLOR_WINDOW + 2));
     Graphics g(mem1dc);
-    player.action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
-    player.attack(rect, g, swordAction);//공격 애니메이션
 
-    
+    PlayerDraw(g);
 
+    Background.DrawUIBackground(g, UIBackground);
+    WeaponIcon.DrawUIIcon(g, UIImage);
 
-    BitBlt(hdc, 0, 0, rectView.right, rectView.bottom, mem1dc, 0, 0, SRCCOPY);
+    BitBlt(hdc, 0, 0, rectView.right, rectViewUI.bottom, mem1dc, 0, 0, SRCCOPY);
 }
 
 void StartSetting(HDC& hdc)
 {
     mem1dc = CreateCompatibleDC(hdc);
     if (hBit == NULL)
-        hBit = CreateCompatibleBitmap(hdc, rectView.right, rectView.bottom);
+        hBit = CreateCompatibleBitmap(hdc, rectView.right, rectViewUI.bottom);
     oldBit = (HBITMAP)SelectObject(mem1dc, hBit);
+
+
     imageAtt = new ImageAttributes;
     imageAtt->SetColorMatrix(&illusionMatrix, ColorMatrixFlagsDefault,
         ColorAdjustTypeBitmap);
+    //UI설정
+    UISetting();
 }
 
+void PlayerSystem()
+{
+    player.changeWeapon(WeaponIcon);//무기 변경
+    player.movePos(PlayerMove());//플레이어 이동
+    player.correctPosition(rectView);//맵 밖으로 나가지 않게 함
+    player.spriteNFrame();//스프라이트와 프레임 설정
+    player.attackCollide(arrows);//공격 충돌 판정
 
+    for (int i = 0; i < arrows.size(); i++)
+    {
+        arrows[i].movePos();
+    }
 
+    CheckArrowOutofArea(arrows, rectView);
+}
 
+void PlayerDraw(Graphics& g)
+{
+    player.action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
 
+    if (player.getWeaponType() == 1)
+        player.attack(rect, g, swordAction, arrowAction, arrows);//공격 애니메이션
+    else
+        player.attack(rect, g, spearAction, arrowAction, arrows);
+}
+
+void UISetting()
+{
+    Background.setWidth(rectViewUI.right - rectViewUI.left + 140);
+    Background.setHeight(rectViewUI.bottom - rectViewUI.top + 60);
+    Background.setX(rectViewUI.left - 70);
+    Background.setY(rectViewUI.top - 30);
+
+    WeaponIcon.setWidth(rectViewUI.bottom - rectViewUI.top - 20);
+    WeaponIcon.setHeight(rectViewUI.bottom - rectViewUI.top - 20);
+    WeaponIcon.setX(rectViewUI.left + 30);
+    WeaponIcon.setY((rectViewUI.bottom + rectViewUI.top) / 2 - WeaponIcon.getHeight() / 2);
+    WeaponIcon.setSizeX(32);
+    WeaponIcon.setSizeY(32);
+    WeaponIcon.setPosX(0);
+    WeaponIcon.setPosY(0);
+}
 
 
 
