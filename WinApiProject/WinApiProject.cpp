@@ -33,7 +33,9 @@ void Update();
 void DrawDoubleBuffering(HDC& hdc);
 void StartSetting(HDC& hdc);
 void PlayerSystem();
+void MonsterSystem(vector<POINT>& route);
 void PlayerDraw(Graphics& g);
+void MonsterDraw(Graphics& g);
 void UISetting();
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
@@ -69,6 +71,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     clock_t oldtime = clock();
     clock_t newtime;
+    clock_t newframetime;
+    clock_t oldframetime = clock();
+
+    int framecheck = 0;
 
     // 기본 메시지 루프입니다:
     while (true)
@@ -87,12 +93,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            newtime = clock();
+            newtime = newframetime = clock();
             if (newtime - oldtime >= 34)
             {
                 oldtime = newtime;
+                framecheck++;
                 Update();
             }
+            if (newframetime - oldframetime >= 34 * 30)
+            {
+                oldframetime = newframetime;
+                //cout << framecheck << endl;
+                framecheck = 0;
+            }
+
         }
     }
 
@@ -191,6 +205,10 @@ int UIDraw = 0;
 
 //플레이어
 Player player;
+//몬스터
+Monster monster;
+
+
 vector<Arrow> arrows;//화살
 //더블 버퍼링
 HDC mem1dc;
@@ -207,9 +225,10 @@ Image* arrowAction;
 
 UIIcon Background;
 UIIcon WeaponIcon;
+
+Astar astar;
 //게임 시작 시 설정
 int startsetting = 1;
-
 //잔상 반투명화
 ColorMatrix illusionMatrix = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                            0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
@@ -294,8 +313,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 void Update()
 {
-
+    static vector<POINT> route;
     PlayerSystem();
+    MonsterSystem(route);
+
+    static int frame = 0;
+    if (frame <= 0)
+    {
+        route = astar.Route(monster.getX(), monster.getY(), player.getX(), player.getY(), GridXSize, GridYSize);
+        frame = 30;
+    }
+    else
+        frame--;
+
+    player.HitCheck(monster);
+
 
     InvalidateRect(hWnd, NULL, FALSE);
 }
@@ -305,7 +337,12 @@ void DrawDoubleBuffering(HDC& hdc)
     FillRect(mem1dc, &rectView, (HBRUSH)(COLOR_WINDOW + 2));
     Graphics g(mem1dc);
 
+    Rectangle(mem1dc, player.getX() - player.getWidth(),
+        player.getY() - player.getHeight(),
+        player.getX() + player.getWidth(),
+        player.getY() + player.getHeight());
     PlayerDraw(g);
+    MonsterDraw(g);
 
     Background.DrawUIBackground(g, UIBackground);
     WeaponIcon.DrawUIIcon(g, UIImage);
@@ -326,6 +363,8 @@ void StartSetting(HDC& hdc)
         ColorAdjustTypeBitmap);
     //UI설정
     UISetting();
+
+    astar.Init(Grids.x, Grids.y);
 }
 
 void PlayerSystem()
@@ -344,6 +383,11 @@ void PlayerSystem()
     CheckArrowOutofArea(arrows, rectView);
 }
 
+void MonsterSystem(vector<POINT>& route)
+{
+    monster.normalMode(route, GridXSize, GridYSize);
+}
+
 void PlayerDraw(Graphics& g)
 {
     player.action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
@@ -352,6 +396,13 @@ void PlayerDraw(Graphics& g)
         player.attack(rect, g, swordAction, arrowAction, arrows);//공격 애니메이션
     else
         player.attack(rect, g, spearAction, arrowAction, arrows);
+}
+
+void MonsterDraw(Graphics& g)
+{
+    Rectangle(mem1dc, monster.getX() - monster.getSizeX() / 2,
+        monster.getY() - monster.getSizeY() / 2, monster.getX() + monster.getSizeX() / 2,
+        monster.getY() + monster.getSizeY() / 2);
 }
 
 void UISetting()

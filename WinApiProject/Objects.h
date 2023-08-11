@@ -8,6 +8,10 @@
 using namespace Gdiplus;
 using namespace std;
 
+class Monster;
+class Arrow;
+class Player;
+
 class Arrow
 {
 private:
@@ -117,6 +121,40 @@ public:
 	void attackCollide(vector<Arrow>& arrows);//공격 충돌 판정
 	void attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrowAction  ,vector<Arrow>& arrows);//공격 애니메이션
 
+	void HitCheck(Monster& monster);
+	int CCW(POINT a, POINT b, POINT c);
 
 	int changeWeapon(UIIcon& WeaponIcon);//무기 변경
+};
+
+class Monster
+{
+private:
+	double x;
+	double y;
+	int sizex;
+	int sizey;
+	int life;
+
+	time_t patterntimer;
+public:
+	Monster();
+	double getX() { return x; }
+	double getY() { return y; }
+	int getLife() { return life; }
+	int getSizeX() { return sizex; }
+	int getSizeY() { return sizey; }
+	time_t getPatternTimer() { return patterntimer; }
+
+	void setX(double x) { this->x = x; }
+	void setY(double y) { this->y = y; }
+	void setLife(int life) { this->life = life; }
+	void setSizeX(int sizex) { this->sizex = sizex; }
+	void setSizeY(int sizey) { this->sizey = sizey; }
+	void setPatternTimer(time_t patterntimer) { this->patterntimer = patterntimer; }
+
+	//통상 상태
+	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize);
+	//패턴 상태
+	int Randomize(int min, int max);
 };

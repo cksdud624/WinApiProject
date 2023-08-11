@@ -5,6 +5,8 @@
 #include <gdiplus.h>
 #include <vector>
 #include <cmath>
+#include <ctime>
+#include <random>
 
 using namespace std;
 
@@ -313,9 +315,78 @@ void Player::attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrow
 		rect.Height = arrows[i].getHeight() * 2;
 		rect.X = arrows[i].getX() - rect.Width / 2;
 		rect.Y = arrows[i].getY() - rect.Height / 2;
-		g.DrawImage(arrowAction, rect,32, 32, 16, 16, UnitPixel);
+		g.DrawImage(arrowAction, rect, 32, 32, 16, 16, UnitPixel);
 		g.ResetTransform();
 	}
+}
+
+void Player::HitCheck(Monster& monster)
+{
+	POINT playerCollider[4] = { {x - width, y - height}, {x - width, y + height},
+		{x + width, y + height}, {x + width, y - height} };//플레이어 콜라이더
+	POINT MonsterCollider[4] = { {monster.getX() - monster.getSizeX() / 2, monster.getY() - monster.getSizeY() / 2},
+		{monster.getX() - monster.getSizeX() / 2, monster.getY() + monster.getSizeY() / 2},
+		{monster.getX() + monster.getSizeX() / 2, monster.getY() + monster.getSizeY() / 2},
+		{monster.getX() + monster.getSizeX() / 2, monster.getY() - monster.getSizeY() / 2}};//몬스터 콜라이더
+
+	int check = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		int count = 0;
+		int nexti;
+		if (i == 3)
+			nexti = 0;
+		else
+			nexti = i + 1;
+		for (int j = 0; j < 4; j++)
+		{
+			int nextj;
+			if (j == 3)
+				nextj = 0;
+			else
+				nextj = j + 1;
+
+			if (MonsterCollider[j].y != MonsterCollider[nextj].y)
+			{
+				POINT down, up;
+				if (MonsterCollider[j].y > MonsterCollider[nextj].y)
+				{
+					down = MonsterCollider[j];
+					up = MonsterCollider[nextj];
+				}
+				else
+				{
+					down = MonsterCollider[nextj];
+					up = MonsterCollider[j];
+				}
+
+				int cross = down.x * up.y + up.x * playerCollider[i].y + playerCollider[i].x * down.y
+					- (down.y * up.x + up.y * playerCollider[i].x + playerCollider[i].y * down.x);
+
+				if (cross > 0 && playerCollider[i].y <= down.y && playerCollider[i].y >= up.y)
+				{
+					count++;
+				}
+
+			}
+		}
+
+		if (count % 2 == 1)
+		{
+			check = 1;
+			break;
+		}
+	}
+
+	if(check == 1)
+		cout << "hit!" << endl;
+
+}
+
+int Player::CCW(POINT a, POINT b, POINT c)
+{
+	return (a.x * b.y + b.x * c.y + c.x * a.y) - (b.x * a.y + c.x * b.y
+		+ a.x * c.y);
 }
 
 int Player::changeWeapon(UIIcon& WeaponIcon)
@@ -366,4 +437,73 @@ void Arrow::movePos()
 	x += speed * sin((double)(360 - angle) / 180 * M_PI);
 	y -= speed * cos((double)(360 - angle) / 180 * M_PI);
 	setCollider();
+}
+
+Monster::Monster()
+{
+	x = 500;
+	y = 100;
+	sizex = 100;
+	sizey = 100;
+	patterntimer = time(NULL);
+	life = 100;
+}
+
+void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize)
+{
+	static int actionframe = 0;
+	static int action = 1;
+	if (actionframe > 0)
+	{
+		actionframe--;
+	}
+	else
+	{
+		actionframe = 30;
+		action = Randomize(1, 3);
+	}
+	if (action <= 2)
+	{
+		if (route.size() > 0)
+		{
+			int xlen = x - route[0].x * GridXSize;
+			int ylen = y - route[0].y * GridYSize;
+
+			int xdirection = 0;
+			int ydirection = 0;
+
+			if (xlen > 0)
+				xdirection = 1;
+			else if (xlen < 0)
+				xdirection = -1;
+
+			if (ylen > 0)
+				ydirection = 1;
+			else if (ylen < 0)
+				ydirection = -1;
+
+
+			if (abs(xlen) <= 5 && abs(ylen) <= 5)
+			{
+				x = route[0].x * GridXSize;
+				y = route[0].y * GridYSize;
+				route.erase(route.begin());
+			}
+			else
+			{
+				x -= 5 * xdirection;
+				y -= 5 * ydirection;
+			}
+		}
+	}
+
+
+}
+
+int Monster::Randomize(int min, int max)
+{
+	random_device rd;
+	mt19937_64 mt(rd());
+	uniform_int_distribution<int> range(min, max);
+	return range(mt);
 }

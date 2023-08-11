@@ -22,7 +22,9 @@
 #include <cmath>
 #include <gdiplus.h>
 #include "Objects.h"
-#include "Tools.h"
 #include "UIItems.h"
+#include "Algorithms.h"
+#include "Tools.h"
+
 
 #pragma comment(lib, "gdiplus.lib") 
