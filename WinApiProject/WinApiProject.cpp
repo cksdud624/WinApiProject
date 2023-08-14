@@ -37,6 +37,7 @@ void MonsterSystem(vector<POINT>& route);
 void PlayerDraw(Graphics& g);
 void MonsterDraw(Graphics& g);
 void UISetting();
+void UIDraw(Graphics& g);
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -200,8 +201,6 @@ const POINT Grids = { 25, 25 };
 int GridXSize;
 int GridYSize;
 
-//UI를 다시 그림
-int UIDraw = 0;
 
 //플레이어
 Player player;
@@ -222,6 +221,7 @@ Image* spearAction;
 Image* UIImage;
 Image* UIBackground;
 Image* arrowAction;
+Image* bossAction;
 
 UIIcon Background;
 UIIcon WeaponIcon;
@@ -265,6 +265,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         arrowAction = Image::FromFile(L"images/arrow.png");
         UIImage = Image::FromFile(L"images/UIImage.png");
         UIBackground = Image::FromFile(L"images/UIBackground.png");
+        bossAction = Image::FromFile(L"images/Boss.png");
     }
         break;
     case WM_COMMAND:
@@ -327,8 +328,8 @@ void Update()
         frame--;
 
     player.HitCheck(monster);
-
-
+    player.ProjHitCheck(monster);
+    monster.HitCheck(player, arrows);
     InvalidateRect(hWnd, NULL, FALSE);
 }
 
@@ -343,9 +344,7 @@ void DrawDoubleBuffering(HDC& hdc)
         player.getY() + player.getHeight());
     PlayerDraw(g);
     MonsterDraw(g);
-
-    Background.DrawUIBackground(g, UIBackground);
-    WeaponIcon.DrawUIIcon(g, UIImage);
+    UIDraw(g);
 
     BitBlt(hdc, 0, 0, rectView.right, rectViewUI.bottom, mem1dc, 0, 0, SRCCOPY);
 }
@@ -385,7 +384,7 @@ void PlayerSystem()
 
 void MonsterSystem(vector<POINT>& route)
 {
-    monster.normalMode(route, GridXSize, GridYSize);
+    monster.normalMode(route, GridXSize, GridYSize, rectView, player);
 }
 
 void PlayerDraw(Graphics& g)
@@ -403,6 +402,18 @@ void MonsterDraw(Graphics& g)
     Rectangle(mem1dc, monster.getX() - monster.getSizeX() / 2,
         monster.getY() - monster.getSizeY() / 2, monster.getX() + monster.getSizeX() / 2,
         monster.getY() + monster.getSizeY() / 2);
+
+    monster.action(rect, g, bossAction);
+
+    vector<Projectile> temp = monster.getProjectiles();
+
+    for (int i = 0; i < temp.size(); i++)
+    {
+        Ellipse(mem1dc, temp[i].getX() - temp[i].getRadius(),
+            temp[i].getY() - temp[i].getRadius(),
+            temp[i].getX() + temp[i].getRadius(),
+            temp[i].getY() + temp[i].getRadius());
+    }
 }
 
 void UISetting()
@@ -422,29 +433,26 @@ void UISetting()
     WeaponIcon.setPosY(0);
 }
 
+void UIDraw(Graphics& g)
+{
+    Background.DrawUIBackground(g, UIBackground);
+    WeaponIcon.DrawUIIcon(g, UIImage);
 
+    FontFamily fontFamily(L"돋움");
+    Font font(&fontFamily, 24, FontStyleRegular, UnitPixel);
+    PointF pointF(rectViewUI.right - 300, (rectViewUI.top + rectViewUI.bottom) / 2 - 12);
+    SolidBrush solidBrush(Color(255, 255, 0, 0));
 
+    TCHAR text[100];
 
+    _stprintf_s(text, L"몬스터 남은 체력 : %d", monster.getLife());
+    g.DrawString(text, -1, &font, pointF, &solidBrush);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    PointF pointF2(rectViewUI.right - 600, (rectViewUI.top + rectViewUI.bottom) / 2 - 12);
+    SolidBrush solidBrush2(Color(255, 0, 150, 0));
+    _stprintf_s(text, L"플레이어 남은 체력 : %d", player.getLife());
+    g.DrawString(text, -1, &font, pointF2, &solidBrush2);
+}
 
 
 

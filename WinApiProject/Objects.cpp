@@ -17,6 +17,7 @@ Player::Player()
 	frame = 3;
 	mdirection = 2;
 
+	life = 100;
 	speed = 10;
 	width = 20;
 	height = 27;
@@ -26,6 +27,8 @@ Player::Player()
 	leftAttackCoolDown = 0;
 
 	weapon = 1;
+
+	hitframe = 30;
 }
 
 Player::~Player()
@@ -137,6 +140,10 @@ void Player::spriteNFrame()
 
 void Player::action(Rect& rect, Graphics& g, Image*& playerAction, ImageAttributes*& imageAtt)
 {
+
+	if (lefthitframe > 0)
+		lefthitframe--;
+
 	rect.Width = width * 2;
 	rect.Height = height * 2;
 
@@ -148,9 +155,10 @@ void Player::action(Rect& rect, Graphics& g, Image*& playerAction, ImageAttribut
 		g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel, imageAtt);
 	}
 
-	rect.X = x - width;
+	rect.X = x - width + 3;
 	rect.Y = y - height;
-	g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
+	if(lefthitframe % 4 <= 1)
+		g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
 }
 
 void Player::correctPosition(RECT& rectView)
@@ -258,6 +266,18 @@ void Player::attackCollide(vector<Arrow>& arrows)
 		}
 	}
 
+	if (attackframe <= 0)
+	{
+		attackPoints[0].x = -100;
+		attackPoints[0].y = -100;
+		attackPoints[1].x = -100;
+		attackPoints[1].y = -100;
+		attackPoints[2].x = -100;
+		attackPoints[2].y = -100;
+		attackPoints[3].x = -100;
+		attackPoints[3].y = -100;
+	}
+
 
 	if (leftAttackCoolDown > 0)
 		leftAttackCoolDown--;
@@ -327,7 +347,7 @@ void Player::HitCheck(Monster& monster)
 	POINT MonsterCollider[4] = { {monster.getX() - monster.getSizeX() / 2, monster.getY() - monster.getSizeY() / 2},
 		{monster.getX() - monster.getSizeX() / 2, monster.getY() + monster.getSizeY() / 2},
 		{monster.getX() + monster.getSizeX() / 2, monster.getY() + monster.getSizeY() / 2},
-		{monster.getX() + monster.getSizeX() / 2, monster.getY() - monster.getSizeY() / 2}};//몬스터 콜라이더
+		{monster.getX() + monster.getSizeX() / 2, monster.getY() - monster.getSizeY() / 2} };//몬스터 콜라이더
 
 	int check = 0;
 	for (int i = 0; i < 4; i++)
@@ -378,15 +398,48 @@ void Player::HitCheck(Monster& monster)
 		}
 	}
 
-	if(check == 1)
-		cout << "hit!" << endl;
+	if (check == 1 && lefthitframe <= 0)
+	{
+		lefthitframe = hitframe;
+		life -= 5;
+	}
 
 }
 
-int Player::CCW(POINT a, POINT b, POINT c)
+
+
+void Player::ProjHitCheck(Monster &monster)
 {
-	return (a.x * b.y + b.x * c.y + c.x * a.y) - (b.x * a.y + c.x * b.y
-		+ a.x * c.y);
+	vector<Projectile> projectiles = monster.getProjectiles();
+	int check = 0;
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		if (projectiles[i].getY() <= y + height && projectiles[i].getY() >= y - height)
+		{
+			if (abs(x - projectiles[i].getX()) <= projectiles[i].getRadius() + width)
+			{
+				projectiles.erase(projectiles.begin() + i);
+				check = 1;
+				break;
+			}
+		}
+		else if (projectiles[i].getX() <= x + width && projectiles[i].getX() >= x - width)
+		{
+			if (abs(y - projectiles[i].getY()) <= projectiles[i].getRadius() + height)
+			{
+				projectiles.erase(projectiles.begin() + i);
+				check = 1;
+				break;
+			}
+		}
+	}
+	if (check == 1 && lefthitframe <= 0)
+	{
+		lefthitframe = hitframe;
+		life -= 5;
+	}
+	monster.setProjectile(projectiles);
+
 }
 
 int Player::changeWeapon(UIIcon& WeaponIcon)
@@ -445,25 +498,54 @@ Monster::Monster()
 	y = 100;
 	sizex = 100;
 	sizey = 100;
-	patterntimer = time(NULL);
 	life = 100;
+
+	actionframe = 30;
+	leftactionframe = 0;
+	pattern = 1;
+
+	spriteX = 0;
+	spriteY = 0;
 }
 
-void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize)
+void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 {
-	static int actionframe = 0;
-	static int action = 1;
-	if (actionframe > 0)
+	rect.X = x - sizex / 2;
+	rect.Y = y - sizey / 2;
+	rect.Width = sizex;
+	rect.Height = sizey;
+
+	if (walking == 1)
 	{
-		actionframe--;
+		if (spriteX == 0 || spriteX >= 3)
+			spriteX = 1;
+		else
+			spriteX++;
 	}
+
+	g.DrawImage(bossAction, rect, 144 * spriteX, 144 * spriteY, 144, 144, UnitPixel);
+}
+
+void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player)
+{
+	
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		projectiles[i].movePos();
+	}
+
+	CheckProjectilesOutofArea(rectView);
+	
+	if (leftactionframe > 0)
+		leftactionframe--;
 	else
 	{
-		actionframe = 30;
-		action = Randomize(1, 3);
+		leftactionframe = actionframe;
+		pattern = Randomize(1, 3);
 	}
-	if (action <= 2)
+	if (pattern <= 2)
 	{
+		walking = 1;
 		if (route.size() > 0)
 		{
 			int xlen = x - route[0].x * GridXSize;
@@ -483,6 +565,19 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize)
 				ydirection = -1;
 
 
+			if (ydirection == 1)
+				spriteY = 3;
+			else if (ydirection == -1)
+				spriteY = 0;
+			else
+			{
+				if (xdirection == 1)
+					spriteY = 1;
+				else
+					spriteY = 2;
+			}
+
+
 			if (abs(xlen) <= 5 && abs(ylen) <= 5)
 			{
 				x = route[0].x * GridXSize;
@@ -496,6 +591,41 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize)
 			}
 		}
 	}
+	else if (pattern == 3)
+	{
+		walking = 0;
+		if (leftactionframe == actionframe)
+		{
+			double xlen = player.getX() - x;
+			double ylen = player.getY() - y;
+			double len = sqrt(xlen * xlen + ylen * ylen);
+			double angle = acos(ylen / len) * 180 / M_PI;
+
+			if (xlen < 0)
+				angle = -angle;
+
+
+			if (angle <= -60 && angle >= -120)
+				spriteY = 1;
+			else if (angle >= 60 && angle <= 120)
+				spriteY = 2;
+			else if (ylen > 0)
+				spriteY = 0;
+			else if (ylen < 0)
+				spriteY = 3;
+
+			for (int i = 0; i < 3; i++)
+			{
+				Projectile projectile;
+				projectile.setX(x);
+				projectile.setY(y);
+				projectile.setSpeed(20);
+				projectile.setRadius(20);
+				projectile.setAngle(45 * i + 45 + angle);
+				projectiles.push_back(projectile);
+			}
+		}
+	}
 
 
 }
@@ -506,4 +636,149 @@ int Monster::Randomize(int min, int max)
 	mt19937_64 mt(rd());
 	uniform_int_distribution<int> range(min, max);
 	return range(mt);
+}
+
+void Monster::CheckProjectilesOutofArea(RECT& rectView)
+{
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		if (projectiles[i].getX() < rectView.left ||
+			projectiles[i].getX() > rectView.right ||
+			projectiles[i].getY() < rectView.top ||
+			projectiles[i].getY() > rectView.bottom)
+		{
+			projectiles.erase(projectiles.begin() + i);
+			i = -1;
+		}
+	}
+}
+
+void Monster::HitCheck(Player& player, vector<Arrow>& arrows)
+{
+	POINT* attackpoints = player.getAttackPoints();
+	POINT monsterCollider[4] = { {x - sizex / 2, y - sizey / 2},
+		{x - sizex / 2, y + sizey / 2},
+		{x + sizex / 2, y + sizey / 2},
+		{x + sizex / 2, y - sizey / 2} };//몬스터 콜라이더
+
+	int count = 0;
+	int hitcheck = 0;
+	for (int i = 0; i < 4; i++)//플레이어 공격 또는 화살이 몬스터 콜라이더와 부딪치는지 확인
+	{
+		int nexti;
+		count = 0;
+		if (i == 3)
+			nexti = 0;
+		else
+			nexti = i + 1;
+
+		
+		for (int j = 0; j < 4; j++)
+		{
+			int nextj;
+			if (j == 3)
+				nextj = 0;
+			else
+				nextj = j + 1;
+
+			if (monsterCollider[j].y != monsterCollider[nextj].y)
+			{
+				POINT down;
+				POINT up;
+
+				if (monsterCollider[j].y > monsterCollider[nextj].y)
+				{
+					down = monsterCollider[j];
+					up = monsterCollider[nextj];
+				}
+				else
+				{
+					down = monsterCollider[nextj];
+					up = monsterCollider[j];
+				}
+				int cross = down.x * up.y + up.x * attackpoints[i].y + attackpoints[i].x * down.y
+					- (down.y * up.x + up.y * attackpoints[i].x + attackpoints[i].y * down.x);
+				if (attackpoints[i].y <= down.y && attackpoints[i].y >= up.y
+					&& cross > 0)
+					count++;
+			}
+		}
+
+		if (count % 2 == 1)
+		{
+			hitcheck = 1;
+			break;
+		}
+	}
+	int arrowcheck = 0;
+	for (int x = 0; x < arrows.size(); x++)
+	{
+		POINT* arrowCollider = arrows[x].getCollider();
+		arrowcheck = 0;
+		for (int i = 0; i < 4; i++)
+		{
+			int nexti;
+			count = 0;
+			if (i == 3)
+				nexti = 0;
+			else
+				nexti = i + 1;
+
+
+			for (int j = 0; j < 4; j++)
+			{
+				int nextj;
+				if (j == 3)
+					nextj = 0;
+				else
+					nextj = j + 1;
+
+				if (monsterCollider[j].y != monsterCollider[nextj].y)
+				{
+					POINT down;
+					POINT up;
+
+					if (monsterCollider[j].y > monsterCollider[nextj].y)
+					{
+						down = monsterCollider[j];
+						up = monsterCollider[nextj];
+					}
+					else
+					{
+						down = monsterCollider[nextj];
+						up = monsterCollider[j];
+					}
+					int cross = down.x * up.y + up.x * arrowCollider[i].y + arrowCollider[i].x * down.y
+						- (down.y * up.x + up.y * arrowCollider[i].x + arrowCollider[i].y * down.x);
+					if (arrowCollider[i].y <= down.y && arrowCollider[i].y >= up.y
+						&& cross > 0)
+						count++;
+				}
+			}
+
+
+			if (count % 2 == 1)
+			{
+				arrowcheck = 1;
+				break;
+			}
+		}
+
+
+		if (arrowcheck == 1)
+		{
+			arrows.erase(arrows.begin() + x);
+			break;
+		}
+	}
+
+	if ((hitcheck == 1 && player.getAttackFrame() >= 3) ||
+		arrowcheck == 1)
+		life -= 5;
+}
+
+void Projectile::movePos()
+{
+	x = x - speed * cos(angle / 180 * M_PI);
+	y = y + speed * sin(angle / 180 * M_PI);
 }
