@@ -209,6 +209,7 @@ Monster monster;
 
 
 vector<Arrow> arrows;//화살
+vector<POINT> blocks;//맵에 블록 생성
 //더블 버퍼링
 HDC mem1dc;
 HDC hdc;
@@ -318,15 +319,15 @@ void Update()
     PlayerSystem();
     MonsterSystem(route);
 
+
     static int frame = 0;
     if (frame <= 0)
     {
-        route = astar.Route(monster.getX(), monster.getY(), player.getX(), player.getY(), GridXSize, GridYSize);
+        route = astar.Route(monster.getX(), monster.getY(), player.getX(), player.getY(), GridXSize, GridYSize, blocks);
         frame = 30;
     }
     else
         frame--;
-
     player.HitCheck(monster);
     player.ProjHitCheck(monster);
     monster.HitCheck(player, arrows);
@@ -345,6 +346,12 @@ void DrawDoubleBuffering(HDC& hdc)
     PlayerDraw(g);
     MonsterDraw(g);
     UIDraw(g);
+
+    for (int i = 0; i < blocks.size(); i++)
+    {
+        Rectangle(mem1dc, blocks[i].x * GridXSize - GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2,
+            blocks[i].x * GridXSize + GridXSize / 2, blocks[i].y * GridYSize + GridYSize / 2);
+    }
 
     BitBlt(hdc, 0, 0, rectView.right, rectViewUI.bottom, mem1dc, 0, 0, SRCCOPY);
 }
@@ -370,7 +377,7 @@ void PlayerSystem()
 {
     player.changeWeapon(WeaponIcon);//무기 변경
     player.movePos(PlayerMove());//플레이어 이동
-    player.correctPosition(rectView);//맵 밖으로 나가지 않게 함
+    player.correctPosition(rectView, blocks, GridXSize, GridYSize);//맵 밖으로 나가지 않게 함
     player.spriteNFrame();//스프라이트와 프레임 설정
     player.attackCollide(arrows);//공격 충돌 판정
 
@@ -384,7 +391,7 @@ void PlayerSystem()
 
 void MonsterSystem(vector<POINT>& route)
 {
-    monster.normalMode(route, GridXSize, GridYSize, rectView, player);
+    monster.normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks);
 }
 
 void PlayerDraw(Graphics& g)

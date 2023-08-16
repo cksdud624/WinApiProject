@@ -161,7 +161,7 @@ void Player::action(Rect& rect, Graphics& g, Image*& playerAction, ImageAttribut
 		g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
 }
 
-void Player::correctPosition(RECT& rectView)
+void Player::correctPosition(RECT& rectView, vector<POINT>& blocks, int GridXSize, int GridYSize)
 {
 	if (x + width > rectView.right)
 		x = rectView.right - width;
@@ -171,6 +171,32 @@ void Player::correctPosition(RECT& rectView)
 		y = rectView.top + height;
 	if (y + height > rectView.bottom)
 		y = rectView.bottom - height;
+
+	for (int i = 0; i < blocks.size(); i++)
+	{
+		int xlen = abs((blocks[i].x * GridXSize) - x);
+		int ylen = abs((blocks[i].y * GridYSize) - y);
+		if (xlen < GridXSize / 2 + width
+			&& ylen < GridYSize / 2 + height)
+		{
+			POINT center = { blocks[i].x * GridXSize, blocks[i].y * GridYSize };
+			POINT lefttop = { blocks[i].x * GridXSize - GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2 };
+			POINT righttop = { blocks[i].x * GridXSize + GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2 };
+
+			int crossleft = cross(center, lefttop, { (int)x, (int)y });
+			int crossright = cross(center, righttop, { (int)x, (int)y });
+			//양수 왼쪽 음수 오른쪽
+			if (crossleft <= 0 && crossright <= 0)
+				x = blocks[i].x * GridXSize - (GridXSize / 2 + width);
+			else if(crossleft <= 0 && crossright >= 0)
+				y = blocks[i].y * GridYSize + (GridYSize / 2 + height);
+			else if(crossleft >= 0 && crossright >= 0)
+				x = blocks[i].x * GridXSize + (GridXSize / 2 + width);
+			else
+				y = blocks[i].y * GridYSize - (GridYSize / 2 + height);
+		}
+	}
+
 }
 
 void Player::attackCollide(vector<Arrow>& arrows)
@@ -465,6 +491,12 @@ int Player::changeWeapon(UIIcon& WeaponIcon)
 	return 0;
 }
 
+int Player::cross(POINT a, POINT b, POINT c)
+{
+	return (a.x * b.y + b.x * c.y + c.x * a.y) - 
+		(a.y * b.x + b.y * c.x + c.y * a.x);
+}
+
 void Arrow::setNewCollider()
 {
 	Collider = new POINT[4];
@@ -496,8 +528,8 @@ Monster::Monster()
 {
 	x = 500;
 	y = 100;
-	sizex = 100;
-	sizey = 100;
+	sizex = 120;
+	sizey = 120;
 	life = 100;
 
 	actionframe = 30;
@@ -526,9 +558,8 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	g.DrawImage(bossAction, rect, 144 * spriteX, 144 * spriteY, 144, 144, UnitPixel);
 }
 
-void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player)
+void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks)
 {
-	
 	for (int i = 0; i < projectiles.size(); i++)
 	{
 		projectiles[i].movePos();
@@ -541,7 +572,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	else
 	{
 		leftactionframe = actionframe;
-		pattern = Randomize(1, 3);
+		pattern = Randomize(1, 4);
 	}
 	if (pattern <= 2)
 	{
@@ -624,6 +655,32 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				projectile.setAngle(45 * i + 45 + angle);
 				projectiles.push_back(projectile);
 			}
+		}
+	}
+	else if (pattern == 4)
+	{
+		walking = 0;
+		int playerx = player.getX() / GridXSize;
+		int playery = player.getY() / GridYSize;
+		if (leftactionframe == actionframe)
+		{
+			int pointx = Randomize(0, grids.x - 1);
+			int pointy = Randomize(0, grids.y - 1);
+			
+			int check = 0;
+			for (int i = 0; i < blocks.size(); i++)
+			{
+				if ((pointx == blocks[i].x && pointy == blocks[i].y) ||
+					(pointx == playerx && pointy == playery)
+					||(pointx == x && pointy == y))
+				{
+					check = 1;
+					break;
+				}
+			}
+
+			if(check == 0)
+				blocks.push_back({ pointx, pointy });
 		}
 	}
 

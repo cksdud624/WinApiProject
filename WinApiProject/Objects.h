@@ -124,16 +124,13 @@ public:
 	void movePos(int pos);//이동
 	void spriteNFrame();//이동 애니메이션 프레임 설정
 	void action(Rect& rect, Graphics& g, Image*& playerAction,  ImageAttributes* &imageAtt);//이동 애니메이션
-
-	void correctPosition(RECT& rectView);//맵 밖으로 나가게하지 못함
-
+	void correctPosition(RECT& rectView, vector<POINT>& blocks, int GridXSize, int GridYSize);//플레이어 위치 보정
 	void attackCollide(vector<Arrow>& arrows);//공격 충돌 판정
 	void attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrowAction  ,vector<Arrow>& arrows);//공격 애니메이션
-
 	void HitCheck(Monster& monster);//몬스터와의 충돌 체크
 	void ProjHitCheck(Monster& monster);//몬스터가 날리는 투사체와의 충돌체크
-
 	int changeWeapon(UIIcon& WeaponIcon);//무기 변경
+	int cross(POINT a, POINT b, POINT c);//외적
 };
 
 class Monster
@@ -178,13 +175,13 @@ public:
 	void action(Rect& rect, Graphics& g, Image*& bossAction);
 
 	//통상 상태
-	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player);
+	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks);
 	//패턴 상태
 	int Randomize(int min, int max);
 	//투사체가 맵 밖으로 나가면 삭제
-	void CheckProjectilesOutofArea(RECT& rectView);
+	void CheckProjectilesOutofArea(RECT& rectView);//투사체가 맵 밖으로 나가는지 확인
 
-	void HitCheck(Player& player, vector<Arrow>& arrows);
+	void HitCheck(Player& player, vector<Arrow>& arrows);//몬스터 피격 판정
 };
 
 class Projectile

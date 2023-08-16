@@ -12,7 +12,7 @@ void Astar::Init(int gridx, int gridy)
 	this->gridy = gridy;
 }
 
-vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize)
+vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<POINT>& blocks)
 {
 	vector<POINT> route;
 	vector<POINT> openpoints;
@@ -20,12 +20,52 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 	int indexstarty = starty / GridYSize;//시작점 y좌표
 	int indexendx = endx / GridXSize;//도착점 x좌표
 	int indexendy = endy / GridYSize;//도작첨 y좌표
+
+
+
 	for (int i = 0; i < gridx; i++)
 	{
 		for (int j = 0; j < gridy; j++)
 		{
 			grids[i * gridx + j].Clear();//원래 있던 값을 초기화
 		}
+	}
+	for (int i = 0; i < blocks.size(); i++)
+	{
+		for (int a = -1; a <= 1; a++)
+		{
+			for (int b = -1; b <= 1; b++)
+			{
+				grids[(blocks[i].x + a) * gridx + (blocks[i].y + b)].setBlock(1);
+			}
+		}
+	}
+	int searchrange = 1;
+	while (grids[indexendx * gridx + indexendy].getBlock() == 1)
+	{
+		int check = 0;
+		for (int a = -searchrange; a <= searchrange; a++)
+		{
+			for (int b = -searchrange; b <= searchrange; b++)
+			{
+				if (indexendx + a < 0 || indexendy + b < 0 || indexendx + a >= gridx 
+					||indexendy + b >= gridy)
+					continue;
+				if (grids[(indexendx + a) * gridx + (indexendy + b)].getBlock() == 0)
+				{
+					indexendx += a;
+					indexendy += b;
+					check = 1;
+					break;
+				}
+			}
+
+			if (check == 1)
+				break;
+		}
+
+		if (check == 0)
+			searchrange++;
 	}
 	POINT move = { indexstartx, indexstarty };
 	int currentG = 0;
@@ -95,9 +135,7 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 			}
 		}
 		//for문끝
-
-		int minF = grids[openpoints[0].x * gridx + openpoints[0].y].getF();
-
+		int minF = grids[openpoints[0].x * gridx + openpoints[0].y].getF();//openpoints가 0인 경유가 있음
 		for (int i = 0; i < openpoints.size(); i++)
 		{
 			if (minF > grids[openpoints[i].x * gridx + openpoints[i].y].getF())
@@ -105,7 +143,6 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 				minF = grids[openpoints[i].x * gridx + openpoints[i].y].getF();
 			}
 		}
-
 
 		vector<POINT> minFpoints;
 
