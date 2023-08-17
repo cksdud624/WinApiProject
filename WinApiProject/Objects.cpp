@@ -530,11 +530,13 @@ Monster::Monster()
 	y = 100;
 	sizex = 120;
 	sizey = 120;
-	life = 100;
+	life = 1000;
 
 	actionframe = 30;
 	leftactionframe = 0;
 	pattern = 1;
+
+	patterntime = time(NULL);
 
 	spriteX = 0;
 	spriteY = 0;
@@ -558,7 +560,8 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	g.DrawImage(bossAction, rect, 144 * spriteX, 144 * spriteY, 144, 144, UnitPixel);
 }
 
-void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks)
+void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks
+, vector<AnimationEffect>& animationeffects)
 {
 	for (int i = 0; i < projectiles.size(); i++)
 	{
@@ -566,7 +569,9 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	}
 
 	CheckProjectilesOutofArea(rectView);
-	
+
+
+
 	if (leftactionframe > 0)
 		leftactionframe--;
 	else
@@ -574,6 +579,11 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 		leftactionframe = actionframe;
 		pattern = Randomize(1, 4);
 	}
+
+	if (route.size() == 0)
+		pattern = 5;
+
+
 	if (pattern <= 2)
 	{
 		walking = 1;
@@ -613,7 +623,8 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 			{
 				x = route[0].x * GridXSize;
 				y = route[0].y * GridYSize;
-				route.erase(route.begin());
+				if(route.size() > 1)
+					route.erase(route.begin());
 			}
 			else
 			{
@@ -683,8 +694,44 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				blocks.push_back({ pointx, pointy });
 		}
 	}
+	else if (pattern == 5)
+	{
+		if (leftactionframe == actionframe || leftactionframe == actionframe - 10
+			|| leftactionframe == actionframe - 20)
+		{
+			for (int i = 0; i < blocks.size(); i++)
+			{
+				AnimationEffect animationeffect(blocks[i].x * GridXSize, blocks[i].y * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+				animationeffects.push_back(animationeffect);
+			}
 
 
+			blocks.clear();
+			for (int i = 0; i < 8; i++)
+			{
+				Projectile projectile;
+				projectile.setX(x);
+				projectile.setY(y);
+				projectile.setSpeed(20);
+				projectile.setRadius(20);
+				projectile.setAngle(45 * i + leftactionframe * 2);
+				projectiles.push_back(projectile);
+			}
+		}
+	}
+}
+
+void Monster::patternMode(RECT& rectView)
+{
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		projectiles[i].movePos();
+	}
+
+	CheckProjectilesOutofArea(rectView);
+
+
+	cout << "ÆÐÅÏ" << endl;
 }
 
 int Monster::Randomize(int min, int max)
@@ -834,8 +881,42 @@ void Monster::HitCheck(Player& player, vector<Arrow>& arrows)
 		life -= 5;
 }
 
+void Monster::drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc)
+{
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		Ellipse(mem1dc, projectiles[i].getX() - projectiles[i].getRadius(),
+			projectiles[i].getY() - projectiles[i].getRadius(),
+			projectiles[i].getX() + projectiles[i].getRadius(),
+			projectiles[i].getY() + projectiles[i].getRadius());
+	}
+}
+
 void Projectile::movePos()
 {
 	x = x - speed * cos(angle / 180 * M_PI);
 	y = y + speed * sin(angle / 180 * M_PI);
+}
+
+AnimationEffect::AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY)
+{
+	effectframe = 10;
+	lefteffectframe = 0;
+	this->x = x;
+	this->y = y;
+	this->spriteX = spriteX;
+	this->spriteY = spriteY;
+	this->width = width;
+	this->height = height;
+}
+
+void AnimationEffect::drawAnimationEffect(Graphics& g, Image*& effect)
+{
+	Rect rect;
+	rect.X = x;
+	rect.Y = y;
+	rect.Width = width;
+	rect.Height = height;
+	g.DrawImage(effect, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	spriteX++;
 }

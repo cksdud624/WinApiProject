@@ -210,6 +210,7 @@ Monster monster;
 
 vector<Arrow> arrows;//화살
 vector<POINT> blocks;//맵에 블록 생성
+vector<AnimationEffect> animationeffects;//애니메이션 효과
 //더블 버퍼링
 HDC mem1dc;
 HDC hdc;
@@ -223,6 +224,7 @@ Image* UIImage;
 Image* UIBackground;
 Image* arrowAction;
 Image* bossAction;
+Image* effect;
 
 UIIcon Background;
 UIIcon WeaponIcon;
@@ -267,6 +269,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         UIImage = Image::FromFile(L"images/UIImage.png");
         UIBackground = Image::FromFile(L"images/UIBackground.png");
         bossAction = Image::FromFile(L"images/Boss.png");
+        effect = Image::FromFile(L"images/effect.png");
     }
         break;
     case WM_COMMAND:
@@ -316,21 +319,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 void Update()
 {
     static vector<POINT> route;
-    PlayerSystem();
-    MonsterSystem(route);
-
-
     static int frame = 0;
     if (frame <= 0)
     {
         route = astar.Route(monster.getX(), monster.getY(), player.getX(), player.getY(), GridXSize, GridYSize, blocks);
         frame = 30;
+        cout << route.size() << endl;
     }
     else
         frame--;
+
+    PlayerSystem();
+    MonsterSystem(route);
+
+
     player.HitCheck(monster);
     player.ProjHitCheck(monster);
     monster.HitCheck(player, arrows);
+
+    for (int i = 0; i < animationeffects.size(); i++)
+    {
+        if (animationeffects[i].getSpriteX() >= 11)
+        {
+            animationeffects.erase(animationeffects.begin() + i);
+            i = -1;
+        }
+    }
+
+
+
     InvalidateRect(hWnd, NULL, FALSE);
 }
 
@@ -351,6 +368,11 @@ void DrawDoubleBuffering(HDC& hdc)
     {
         Rectangle(mem1dc, blocks[i].x * GridXSize - GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2,
             blocks[i].x * GridXSize + GridXSize / 2, blocks[i].y * GridYSize + GridYSize / 2);
+    }
+
+    for (int i = 0; i < animationeffects.size(); i++)
+    {
+        animationeffects[i].drawAnimationEffect(g, effect);
     }
 
     BitBlt(hdc, 0, 0, rectView.right, rectViewUI.bottom, mem1dc, 0, 0, SRCCOPY);
@@ -391,7 +413,19 @@ void PlayerSystem()
 
 void MonsterSystem(vector<POINT>& route)
 {
-    monster.normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks);
+    int temp = time(NULL) - monster.getPatterntime();
+    if (temp < 50)
+        monster.normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks, animationeffects);
+    else
+    {
+        for (int i = 0; i < blocks.size(); i++)
+        {
+            AnimationEffect animationeffect(blocks[i].x * GridXSize, blocks[i].y * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+            animationeffects.push_back(animationeffect);
+        }
+        blocks.clear();
+        monster.patternMode(rectView);
+    }
 }
 
 void PlayerDraw(Graphics& g)
@@ -411,16 +445,7 @@ void MonsterDraw(Graphics& g)
         monster.getY() + monster.getSizeY() / 2);
 
     monster.action(rect, g, bossAction);
-
-    vector<Projectile> temp = monster.getProjectiles();
-
-    for (int i = 0; i < temp.size(); i++)
-    {
-        Ellipse(mem1dc, temp[i].getX() - temp[i].getRadius(),
-            temp[i].getY() - temp[i].getRadius(),
-            temp[i].getX() + temp[i].getRadius(),
-            temp[i].getY() + temp[i].getRadius());
-    }
+    monster.drawProjectiles(g, effect, mem1dc);
 }
 
 void UISetting()

@@ -135,6 +135,10 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 			}
 		}
 		//for문끝
+
+		if (openpoints.size() <= 0)
+			return route;
+
 		int minF = grids[openpoints[0].x * gridx + openpoints[0].y].getF();//openpoints가 0인 경유가 있음
 		for (int i = 0; i < openpoints.size(); i++)
 		{

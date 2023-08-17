@@ -12,6 +12,8 @@ class Monster;
 class Arrow;
 class Player;
 class Projectile;
+class DangerZone;
+class AnimationEffect;
 
 class Arrow
 {
@@ -144,11 +146,14 @@ private:
 
 	//투사체 
 	vector<Projectile> projectiles;
+	vector<DangerZone> dangerzones;
 
 	int walking;//걷는 애니메이션
 
 	int actionframe;
 	int leftactionframe;
+
+	time_t patterntime;
 
 	//몬스터 애니메이션
 	int pattern;
@@ -165,6 +170,7 @@ public:
 	int getSizeX() { return sizex; }
 	int getSizeY() { return sizey; }
 	vector<Projectile> getProjectiles() { return projectiles; }
+	time_t getPatterntime() { return patterntime; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
@@ -175,13 +181,18 @@ public:
 	void action(Rect& rect, Graphics& g, Image*& bossAction);
 
 	//통상 상태
-	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks);
+	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks
+	, vector<AnimationEffect>& animationeffects);
 	//패턴 상태
+	void patternMode(RECT& rectView);
+
 	int Randomize(int min, int max);
 	//투사체가 맵 밖으로 나가면 삭제
 	void CheckProjectilesOutofArea(RECT& rectView);//투사체가 맵 밖으로 나가는지 확인
 
 	void HitCheck(Player& player, vector<Arrow>& arrows);//몬스터 피격 판정
+
+	void drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc);//투사체를 그림
 };
 
 class Projectile
@@ -207,4 +218,39 @@ public:
 	void setAngle(double angle) { this->angle = angle; }
 
 	void movePos();
+};
+
+class AnimationEffect
+{
+private:
+	double x;
+	double y;
+	int width;
+	int height;
+
+	int lefteffectframe;
+	int effectframe;
+
+	int spriteX;
+	int spriteY;
+public:
+	AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY);
+	int getSpriteX() { return spriteX; }
+	void drawAnimationEffect(Graphics& g, Image*& effect);
+};
+
+class DangerZone
+{
+private:
+	double x;
+	double y;
+	int radius;
+public:
+	double getX() { return x; }
+	double getY() { return y; }
+	int getRadius() { return radius; }
+
+	void setX(double x) { this->x = x; }
+	void setY(double y) { this->y = y; }
+	void setRadius(int radius) { this->radius = radius; }
 };
