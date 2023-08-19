@@ -226,6 +226,7 @@ Image* arrowAction;
 Image* bossAction;
 Image* effect;
 Image* terrain;
+Image* map;
 
 UIIcon Background;
 UIIcon WeaponIcon;
@@ -272,6 +273,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         bossAction = Image::FromFile(L"images/Boss.png");
         effect = Image::FromFile(L"images/effect.png");
         terrain = Image::FromFile(L"images/terrain.png");
+        map = Image::FromFile(L"images/map.png");
     }
         break;
     case WM_COMMAND:
