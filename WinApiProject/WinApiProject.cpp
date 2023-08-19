@@ -225,6 +225,7 @@ Image* UIBackground;
 Image* arrowAction;
 Image* bossAction;
 Image* effect;
+Image* terrain;
 
 UIIcon Background;
 UIIcon WeaponIcon;
@@ -270,6 +271,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         UIBackground = Image::FromFile(L"images/UIBackground.png");
         bossAction = Image::FromFile(L"images/Boss.png");
         effect = Image::FromFile(L"images/effect.png");
+        terrain = Image::FromFile(L"images/terrain.png");
     }
         break;
     case WM_COMMAND:
@@ -356,6 +358,17 @@ void DrawDoubleBuffering(HDC& hdc)
     FillRect(mem1dc, &rectView, (HBRUSH)(COLOR_WINDOW + 2));
     Graphics g(mem1dc);
 
+    for (int i = 0; i < blocks.size(); i++)
+    {
+        Rect rect;
+        rect.X = blocks[i].x * GridXSize - GridXSize / 2;
+        rect.Y = blocks[i].y * GridYSize - GridYSize / 2;
+        rect.Width = GridXSize;
+        rect.Height = GridYSize;
+        g.DrawImage(terrain, rect, 192, 128, 32, 32, UnitPixel);
+    }
+
+
     Rectangle(mem1dc, player.getX() - player.getWidth(),
         player.getY() - player.getHeight(),
         player.getX() + player.getWidth(),
@@ -363,12 +376,6 @@ void DrawDoubleBuffering(HDC& hdc)
     PlayerDraw(g);
     MonsterDraw(g);
     UIDraw(g);
-
-    for (int i = 0; i < blocks.size(); i++)
-    {
-        Rectangle(mem1dc, blocks[i].x * GridXSize - GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2,
-            blocks[i].x * GridXSize + GridXSize / 2, blocks[i].y * GridYSize + GridYSize / 2);
-    }
 
     for (int i = 0; i < animationeffects.size(); i++)
     {
@@ -414,17 +421,27 @@ void PlayerSystem()
 void MonsterSystem(vector<POINT>& route)
 {
     int temp = time(NULL) - monster.getPatterntime();
-    if (temp < 50)
+    if (temp < 60)
         monster.normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks, animationeffects);
     else
     {
-        for (int i = 0; i < blocks.size(); i++)
+        monster.patternMode(rectView, GridXSize, GridYSize, Grids, player, animationeffects);
+        if (monster.getPatternStart() == 0)
         {
-            AnimationEffect animationeffect(blocks[i].x * GridXSize, blocks[i].y * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
-            animationeffects.push_back(animationeffect);
+            for (int i = 0; i < blocks.size(); i++)
+            {
+                AnimationEffect animationeffect((blocks[i].x - 1) * GridXSize, (blocks[i].y - 1) * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+                animationeffects.push_back(animationeffect);
+            }
+            blocks.clear();
+            monster.setPatternStart(1);
         }
-        blocks.clear();
-        monster.patternMode(rectView);
+
+        if (monster.getLeftPatternProgress() <= 0)
+        {
+            monster.setPatternStart(0);
+            monster.setPatternTime(time(NULL));
+        }
     }
 }
 
@@ -446,6 +463,7 @@ void MonsterDraw(Graphics& g)
 
     monster.action(rect, g, bossAction);
     monster.drawProjectiles(g, effect, mem1dc);
+    monster.drawDangerZones(g, mem1dc);
 }
 
 void UISetting()

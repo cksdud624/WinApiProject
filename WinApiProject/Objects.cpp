@@ -538,6 +538,11 @@ Monster::Monster()
 
 	patterntime = time(NULL);
 
+	patternprogress = 500;
+	leftpatternprogress = 0;
+
+	patternstart = 0;
+
 	spriteX = 0;
 	spriteY = 0;
 }
@@ -568,7 +573,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 		projectiles[i].movePos();
 	}
 
-	CheckProjectilesOutofArea(rectView);
+	CheckProjectilesOutofAreaorTime(rectView);
 
 
 
@@ -721,17 +726,118 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	}
 }
 
-void Monster::patternMode(RECT& rectView)
+void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects)
 {
+
+
+	for (int i = 0; i < dangerzones.size(); i++)
+	{
+		dangerzones[i].checkframe(projectiles, animationeffects);
+	}
+
+
+	for (int i = 0; i < dangerzones.size(); i++)
+	{
+		if (dangerzones[i].getleftframe() <= 0)
+		{
+			dangerzones.erase(dangerzones.begin() + i);
+			i = -1;
+		}
+	}
 	for (int i = 0; i < projectiles.size(); i++)
 	{
 		projectiles[i].movePos();
 	}
 
-	CheckProjectilesOutofArea(rectView);
+	CheckProjectilesOutofAreaorTime(rectView);
+
+	if (patternstart == 0)
+	{
+		leftpatternprogress = patternprogress;
+		walking = 0;
+
+	}
 
 
-	cout << "ÆÐÅÏ" << endl;
+	if (leftpatternprogress >= patternprogress - 100)
+	{
+		if (leftpatternprogress % 3 == 0)
+		{
+			double xlen = player.getX() - x;
+			double ylen = player.getY() - y;
+			double len = sqrt(xlen * xlen + ylen * ylen);
+			double angle = acos(ylen / len) * 180 / M_PI;
+
+			if (xlen < 0)
+				angle = -angle;
+			else if (angle >= 60 && angle <= 120)
+				spriteY = 2;
+			else if (ylen > 0)
+				spriteY = 0;
+			else if (ylen < 0)
+				spriteY = 3;
+
+			Projectile projectile;
+			projectile.setX(x);
+			projectile.setY(y);
+			projectile.setSpeed(20);
+			projectile.setRadius(20);
+			projectile.setAngle(90 + angle);
+			projectiles.push_back(projectile);
+		}
+	}
+	else if (leftpatternprogress >= patternprogress - 300)
+	{
+		if (leftpatternprogress % 2 == 0)
+		{
+			Projectile projectile;
+			projectile.setSpeed(20);
+			projectile.setRadius(40);
+			int direction = Randomize(1, 4) * 2;
+			int pointx = Randomize(1, GridXSize - 2);
+			int pointy = Randomize(1, GridYSize - 2);
+			if (direction == 8)
+			{
+				projectile.setX(pointx * GridXSize);
+				projectile.setY(0);
+				projectile.setAngle(90);
+			}
+			else if (direction == 2)
+			{
+				projectile.setX(pointx * GridXSize);
+				projectile.setY(Grids.y * GridYSize);
+				projectile.setAngle(270);
+			}
+			else if (direction == 4)
+			{
+				projectile.setX(Grids.x * GridXSize);
+				projectile.setY(pointy * GridYSize);
+				projectile.setAngle(0);
+			}
+			else
+			{
+				projectile.setX(0);
+				projectile.setY(pointy * GridYSize);
+				projectile.setAngle(180);
+			}
+			projectiles.push_back(projectile);
+		}
+	}
+	else if(leftpatternprogress >= patternprogress - 400)
+	{
+		if (leftpatternprogress % 10 == 0)
+		{
+			DangerZone dangerzone;
+			dangerzone.setX(player.getX());
+			dangerzone.setY(player.getY());
+			dangerzone.setRadius(150);
+			dangerzone.activatezone();
+
+			dangerzones.push_back(dangerzone);
+		}
+
+	}
+	leftpatternprogress--;
 }
 
 int Monster::Randomize(int min, int max)
@@ -742,14 +848,19 @@ int Monster::Randomize(int min, int max)
 	return range(mt);
 }
 
-void Monster::CheckProjectilesOutofArea(RECT& rectView)
+void Monster::CheckProjectilesOutofAreaorTime(RECT& rectView)
 {
 	for (int i = 0; i < projectiles.size(); i++)
 	{
+		if (projectiles[i].getLeftProjectileFrame() > 0)
+		{
+			projectiles[i].setLeftProjectileFrame(projectiles[i].getLeftProjectileFrame() - 1);
+		}
 		if (projectiles[i].getX() < rectView.left ||
 			projectiles[i].getX() > rectView.right ||
 			projectiles[i].getY() < rectView.top ||
-			projectiles[i].getY() > rectView.bottom)
+			projectiles[i].getY() > rectView.bottom
+			|| projectiles[i].getLeftProjectileFrame() == 0)
 		{
 			projectiles.erase(projectiles.begin() + i);
 			i = -1;
@@ -892,6 +1003,25 @@ void Monster::drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc)
 	}
 }
 
+void Monster::drawDangerZones(Graphics& g, HDC& mem1dc)
+{
+	SolidBrush DangerZoneBrush(Color(50, 255, 0, 0));
+	for (int i = 0; i < dangerzones.size(); i++)
+	{
+		Rect rect;
+		rect.X = dangerzones[i].getX() - dangerzones[i].getRadius() / 2;
+		rect.Y = dangerzones[i].getY() - dangerzones[i].getRadius() / 2;
+		rect.Width = rect.Height = dangerzones[i].getRadius();
+
+		g.FillEllipse(&DangerZoneBrush, rect);
+	}
+}
+
+Projectile::Projectile()
+{
+	leftprojectileframe = -1;
+}
+
 void Projectile::movePos()
 {
 	x = x - speed * cos(angle / 180 * M_PI);
@@ -919,4 +1049,38 @@ void AnimationEffect::drawAnimationEffect(Graphics& g, Image*& effect)
 	rect.Height = height;
 	g.DrawImage(effect, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
 	spriteX++;
+}
+
+void DangerZone::activatezone()
+{
+	leftframe = frame;
+}
+
+DangerZone::DangerZone()
+{
+	frame = 10;
+}
+
+int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffect>& animationeffects)
+{
+	leftframe--;
+	if (leftframe <= 0)
+	{
+		Projectile projectile;
+		projectile.setX(x);
+		projectile.setY(y);
+		projectile.setRadius(radius / 2);
+		projectile.setSpeed(0);
+		projectile.setLeftProjectileFrame(10);
+
+		projectiles.push_back(projectile);
+
+		AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9);
+		animationeffects.push_back(animationeffect);
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }

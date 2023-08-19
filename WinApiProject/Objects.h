@@ -146,14 +146,24 @@ private:
 
 	//투사체 
 	vector<Projectile> projectiles;
+	//위험 구역 생성
 	vector<DangerZone> dangerzones;
 
-	int walking;//걷는 애니메이션
+	//걷는 애니메이션
+	int walking;
 
+	//몬스터 애니메이션
 	int actionframe;
 	int leftactionframe;
 
+	//패턴 시작까지 남은 시간
 	time_t patterntime;
+
+	//패턴 진행
+	int patternprogress;
+	int leftpatternprogress;
+	//패턴 시작
+	int patternstart;
 
 	//몬스터 애니메이션
 	int pattern;
@@ -171,6 +181,8 @@ public:
 	int getSizeY() { return sizey; }
 	vector<Projectile> getProjectiles() { return projectiles; }
 	time_t getPatterntime() { return patterntime; }
+	int getPatternStart() { return patternstart; }
+	int getLeftPatternProgress() { return leftpatternprogress; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
@@ -178,21 +190,29 @@ public:
 	void setSizeX(int sizex) { this->sizex = sizex; }
 	void setSizeY(int sizey) { this->sizey = sizey; }
 	void setProjectile(vector<Projectile> projectiles) { this->projectiles = projectiles; }
+	void setPatternStart(int patternstart) { this->patternstart = patternstart; }
+	void setWalking(int walking) { this->walking = walking; }
+	void setPatternTime(time_t patterntime) { this->patterntime = patterntime; }
+
+	//몬스터 애니메이션
 	void action(Rect& rect, Graphics& g, Image*& bossAction);
 
 	//통상 상태
 	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks
 	, vector<AnimationEffect>& animationeffects);
 	//패턴 상태
-	void patternMode(RECT& rectView);
+	void patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects);
 
 	int Randomize(int min, int max);
+
 	//투사체가 맵 밖으로 나가면 삭제
-	void CheckProjectilesOutofArea(RECT& rectView);//투사체가 맵 밖으로 나가는지 확인
-
-	void HitCheck(Player& player, vector<Arrow>& arrows);//몬스터 피격 판정
-
-	void drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc);//투사체를 그림
+	void CheckProjectilesOutofAreaorTime(RECT& rectView);
+	//몬스터 피격 판정
+	void HitCheck(Player& player, vector<Arrow>& arrows);
+	//투사체를 그림
+	void drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc);
+	//위험 구역을 그림
+	void drawDangerZones(Graphics& g, HDC& mem1dc);
 };
 
 class Projectile
@@ -204,18 +224,24 @@ private:
 
 	int speed;
 	double angle;
+
+	int projectileframe;
+	int leftprojectileframe;
 public:
+	Projectile();
 	double getX() { return x; }
 	double getY() { return y; }
 	int getRadius() { return radius; }
 	int getSpeed() { return speed; }
 	double getAngle() { return angle; }
+	int getLeftProjectileFrame(){ return leftprojectileframe; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
 	void setRadius(int radius) { this->radius = radius; }
 	void setSpeed(int speed) { this->speed = speed; }
 	void setAngle(double angle) { this->angle = angle; }
+	void setLeftProjectileFrame(int leftprojectileframe) { this->leftprojectileframe = leftprojectileframe; }
 
 	void movePos();
 };
@@ -245,12 +271,19 @@ private:
 	double x;
 	double y;
 	int radius;
+	int frame;
+	int leftframe;
 public:
+	DangerZone();
 	double getX() { return x; }
 	double getY() { return y; }
 	int getRadius() { return radius; }
+	int getleftframe() { return leftframe; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
 	void setRadius(int radius) { this->radius = radius; }
+
+	void activatezone();
+	int checkframe(vector<Projectile>& projectiles, vector<AnimationEffect>& animationeffects);
 };
