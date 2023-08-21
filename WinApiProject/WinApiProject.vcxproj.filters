@@ -39,6 +39,9 @@
     <ClInclude Include="Algorithms.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="functions.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinApiProject.cpp">
@@ -51,6 +54,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Algorithms.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="functions.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

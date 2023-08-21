@@ -17,12 +17,12 @@ Player::Player()
 	frame = 3;
 	mdirection = 2;
 
-	life = 100;
+	maxlife = 100;
+	life = maxlife;
 	speed = 10;
 	width = 20;
 	height = 27;
 
-	attackPoints = new POINT[4];
 	attackCoolDown = 17;
 	leftAttackCoolDown = 0;
 
@@ -33,7 +33,6 @@ Player::Player()
 
 Player::~Player()
 {
-	delete[] attackPoints;
 }
 
 void Player::movePos(int pos)
@@ -161,7 +160,7 @@ void Player::action(Rect& rect, Graphics& g, Image*& playerAction, ImageAttribut
 		g.DrawImage(playerAction, rect, 80 * spriteX, 110 * spriteY, 80, 110, UnitPixel);
 }
 
-void Player::correctPosition(RECT& rectView, vector<POINT>& blocks, int GridXSize, int GridYSize)
+void Player::correctPosition(RECT& rectView, vector<Block>& blocks, int GridXSize, int GridYSize)
 {
 	if (x + width > rectView.right)
 		x = rectView.right - width;
@@ -174,26 +173,26 @@ void Player::correctPosition(RECT& rectView, vector<POINT>& blocks, int GridXSiz
 
 	for (int i = 0; i < blocks.size(); i++)
 	{
-		int xlen = abs((blocks[i].x * GridXSize) - x);
-		int ylen = abs((blocks[i].y * GridYSize) - y);
+		int xlen = abs((blocks[i].getX() * GridXSize) - x);
+		int ylen = abs((blocks[i].getY() * GridYSize) - y);
 		if (xlen < GridXSize / 2 + width
 			&& ylen < GridYSize / 2 + height)
 		{
-			POINT center = { blocks[i].x * GridXSize, blocks[i].y * GridYSize };
-			POINT lefttop = { blocks[i].x * GridXSize - GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2 };
-			POINT righttop = { blocks[i].x * GridXSize + GridXSize / 2, blocks[i].y * GridYSize - GridYSize / 2 };
+			POINT center = { blocks[i].getX() * GridXSize, blocks[i].getY() * GridYSize };
+			POINT lefttop = { blocks[i].getX() * GridXSize - GridXSize / 2, blocks[i].getY() * GridYSize - GridYSize / 2 };
+			POINT righttop = { blocks[i].getX() * GridXSize + GridXSize / 2, blocks[i].getY() * GridYSize - GridYSize / 2 };
 
 			int crossleft = cross(center, lefttop, { (int)x, (int)y });
 			int crossright = cross(center, righttop, { (int)x, (int)y });
 			//양수 왼쪽 음수 오른쪽
 			if (crossleft <= 0 && crossright <= 0)
-				x = blocks[i].x * GridXSize - (GridXSize / 2 + width);
+				x = blocks[i].getX() * GridXSize - (GridXSize / 2 + width);
 			else if(crossleft <= 0 && crossright >= 0)
-				y = blocks[i].y * GridYSize + (GridYSize / 2 + height);
+				y = blocks[i].getY() * GridYSize + (GridYSize / 2 + height);
 			else if(crossleft >= 0 && crossright >= 0)
-				x = blocks[i].x * GridXSize + (GridXSize / 2 + width);
+				x = blocks[i].getX() * GridXSize + (GridXSize / 2 + width);
 			else
-				y = blocks[i].y * GridYSize - (GridYSize / 2 + height);
+				y = blocks[i].getY() * GridYSize - (GridYSize / 2 + height);
 		}
 	}
 
@@ -366,7 +365,7 @@ void Player::attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrow
 	}
 }
 
-void Player::HitCheck(Monster& monster)
+int Player::HitCheck(Monster& monster)
 {
 	POINT playerCollider[4] = { {x - width, y - height}, {x - width, y + height},
 		{x + width, y + height}, {x + width, y - height} };//플레이어 콜라이더
@@ -428,13 +427,15 @@ void Player::HitCheck(Monster& monster)
 	{
 		lefthitframe = hitframe;
 		life -= 5;
+		return 5;
 	}
+	return 0;
 
 }
 
 
 
-void Player::ProjHitCheck(Monster &monster)
+int Player::ProjHitCheck(Monster &monster)
 {
 	vector<Projectile> projectiles = monster.getProjectiles();
 	int check = 0;
@@ -444,6 +445,7 @@ void Player::ProjHitCheck(Monster &monster)
 		{
 			if (abs(x - projectiles[i].getX()) <= projectiles[i].getRadius() + width)
 			{
+				cout << "투사체 삭제1" << endl;
 				projectiles.erase(projectiles.begin() + i);
 				check = 1;
 				break;
@@ -453,18 +455,21 @@ void Player::ProjHitCheck(Monster &monster)
 		{
 			if (abs(y - projectiles[i].getY()) <= projectiles[i].getRadius() + height)
 			{
+				cout << "투사체 삭제2" << endl;
 				projectiles.erase(projectiles.begin() + i);
 				check = 1;
 				break;
 			}
 		}
 	}
+	monster.setProjectile(projectiles);
 	if (check == 1 && lefthitframe <= 0)
 	{
 		lefthitframe = hitframe;
 		life -= 5;
+		return 5;
 	}
-	monster.setProjectile(projectiles);
+	return 0;
 
 }
 
@@ -473,19 +478,19 @@ int Player::changeWeapon(UIIcon& WeaponIcon)
 	if (GetKeyState('1') < 0)
 	{
 		weapon = 1;
-		WeaponIcon.setPosX(0);
+		WeaponIcon.setX(30);
 		return 1;
 	}
 	else if (GetKeyState('2') < 0)
 	{
 		weapon = 2;
-		WeaponIcon.setPosX(128);
+		WeaponIcon.setX(30 + WeaponIcon.getWidth());
 		return 1;
 	}
 	else if (GetKeyState('3') < 0)
 	{
 		weapon = 3;
-		WeaponIcon.setPosX(160);
+		WeaponIcon.setX(30 + 2 * WeaponIcon.getWidth());
 		return 1;
 	}
 	return 0;
@@ -496,10 +501,8 @@ int Player::cross(POINT a, POINT b, POINT c)
 	return (a.x * b.y + b.x * c.y + c.x * a.y) - 
 		(a.y * b.x + b.y * c.x + c.y * a.x);
 }
-
 void Arrow::setNewCollider()
 {
-	Collider = new POINT[4];
 	setCollider();
 }
 
@@ -530,7 +533,8 @@ Monster::Monster()
 	y = 100;
 	sizex = 120;
 	sizey = 120;
-	life = 1000;
+	maxlife = 1000;
+	life = maxlife;
 
 	actionframe = 30;
 	leftactionframe = 0;
@@ -545,6 +549,9 @@ Monster::Monster()
 
 	spriteX = 0;
 	spriteY = 0;
+
+	frame = 12;
+	leftframe = 0;
 }
 
 void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
@@ -554,7 +561,13 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	rect.Width = sizex;
 	rect.Height = sizey;
 
-	if (walking == 1)
+	if (groggy == 1)
+	{
+		frame--;
+		if(spriteX != 3 && frame % 4 == 0)
+			spriteX++;
+	}
+	else if (walking == 1)
 	{
 		if (spriteX == 0 || spriteX >= 3)
 			spriteX = 1;
@@ -565,7 +578,7 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	g.DrawImage(bossAction, rect, 144 * spriteX, 144 * spriteY, 144, 144, UnitPixel);
 }
 
-void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks
+void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
 , vector<AnimationEffect>& animationeffects)
 {
 	for (int i = 0; i < projectiles.size(); i++)
@@ -628,8 +641,11 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 			{
 				x = route[0].x * GridXSize;
 				y = route[0].y * GridYSize;
-				if(route.size() > 1)
+				if (route.size() > 1)
+				{
+					cout << "ASTAR 삭제" << endl;
 					route.erase(route.begin());
+				}
 			}
 			else
 			{
@@ -686,17 +702,22 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 			int check = 0;
 			for (int i = 0; i < blocks.size(); i++)
 			{
-				if ((pointx == blocks[i].x && pointy == blocks[i].y) ||
+				if ((pointx == blocks[i].getX() && pointy == blocks[i].getY()) ||
 					(pointx == playerx && pointy == playery)
-					||(pointx == x && pointy == y))
+					|| (abs(pointx - x) <=  1 && abs(pointy - y) <= 1))
 				{
 					check = 1;
 					break;
 				}
 			}
 
-			if(check == 0)
-				blocks.push_back({ pointx, pointy });
+			if (check == 0)
+			{
+				Block block;
+				block.setX(pointx);
+				block.setY(pointy);
+				blocks.push_back(block);
+			}
 		}
 	}
 	else if (pattern == 5)
@@ -706,7 +727,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 		{
 			for (int i = 0; i < blocks.size(); i++)
 			{
-				AnimationEffect animationeffect(blocks[i].x * GridXSize, blocks[i].y * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+				AnimationEffect animationeffect(blocks[i].getX() * GridXSize, blocks[i].getY() * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
 				animationeffects.push_back(animationeffect);
 			}
 
@@ -740,6 +761,7 @@ void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gr
 	{
 		if (dangerzones[i].getleftframe() <= 0)
 		{
+			cout << "레드존 삭제" << endl;
 			dangerzones.erase(dangerzones.begin() + i);
 			i = -1;
 		}
@@ -862,13 +884,14 @@ void Monster::CheckProjectilesOutofAreaorTime(RECT& rectView)
 			projectiles[i].getY() > rectView.bottom
 			|| projectiles[i].getLeftProjectileFrame() == 0)
 		{
+			cout << "투사체 삭제3" << endl;
 			projectiles.erase(projectiles.begin() + i);
 			i = -1;
 		}
 	}
 }
 
-void Monster::HitCheck(Player& player, vector<Arrow>& arrows)
+int Monster::HitCheck(Player& player, vector<Arrow>& arrows)
 {
 	POINT* attackpoints = player.getAttackPoints();
 	POINT monsterCollider[4] = { {x - sizex / 2, y - sizey / 2},
@@ -989,17 +1012,50 @@ void Monster::HitCheck(Player& player, vector<Arrow>& arrows)
 
 	if ((hitcheck == 1 && player.getAttackFrame() >= 3) ||
 		arrowcheck == 1)
-		life -= 5;
+	{
+		int damage = 0;
+		if (player.getWeaponType() == 1)
+		{
+			damage = 15;
+		}
+		else if (player.getWeaponType() == 2)
+		{
+			damage = 5;
+		}
+		else if (player.getWeaponType() == 3)
+		{
+			damage = 10;
+		}
+
+		if (groggy == 1)
+			damage *= 2;
+		life -= damage;
+		return damage;
+	}
+	return 0;
 }
 
-void Monster::drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc)
+void Monster::groggyMode()
+{
+	spriteX = 0;
+	spriteY = 4;
+	groggy = 1;
+	leftframe = frame;
+}
+
+void Monster::drawProjectiles(Graphics& g, Image*& effect,Image*& projectile)
 {
 	for (int i = 0; i < projectiles.size(); i++)
 	{
-		Ellipse(mem1dc, projectiles[i].getX() - projectiles[i].getRadius(),
-			projectiles[i].getY() - projectiles[i].getRadius(),
-			projectiles[i].getX() + projectiles[i].getRadius(),
-			projectiles[i].getY() + projectiles[i].getRadius());
+		if (projectiles[i].getType() == 0)
+		{
+			Rect rect;
+			rect.X = projectiles[i].getX() - projectiles[i].getRadius();
+			rect.Y = projectiles[i].getY() - projectiles[i].getRadius();
+			rect.Width = projectiles[i].getRadius() * 2;
+			rect.Height = projectiles[i].getRadius() * 2;
+			g.DrawImage(projectile, rect);
+		}
 	}
 }
 
@@ -1020,6 +1076,7 @@ void Monster::drawDangerZones(Graphics& g, HDC& mem1dc)
 Projectile::Projectile()
 {
 	leftprojectileframe = -1;
+	type = 0;
 }
 
 void Projectile::movePos()
@@ -1072,6 +1129,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 		projectile.setRadius(radius / 2);
 		projectile.setSpeed(0);
 		projectile.setLeftProjectileFrame(10);
+		projectile.setType(1);
 
 		projectiles.push_back(projectile);
 
@@ -1083,4 +1141,27 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 	{
 		return 0;
 	}
+}
+
+Block::Block()
+{
+	frame = 10;
+	leftframe = frame;
+}
+
+void Block::drawBlock(Graphics& g, Image* BlockImage, int GridXSize, int GridYSize)
+{
+	Rect rect;
+	double ratio = (1 - (double)leftframe / (double)frame);
+	rect.Width = GridXSize;
+	rect.Height = GridYSize * ratio;
+	rect.X = x * GridXSize - GridXSize / 2;
+	rect.Y = y * GridYSize - GridYSize / 2 + GridYSize * (1 - ratio);
+	g.DrawImage(BlockImage, rect, 0, 0, 64, 64 * ratio, UnitPixel);
+}
+
+void Block::update()
+{
+	if(leftframe > 0)
+		leftframe--;
 }

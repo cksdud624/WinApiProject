@@ -12,7 +12,7 @@ void Astar::Init(int gridx, int gridy)
 	this->gridy = gridy;
 }
 
-vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<POINT>& blocks)
+vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks)
 {
 	vector<POINT> route;
 	vector<POINT> openpoints;
@@ -36,7 +36,7 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 		{
 			for (int b = -1; b <= 1; b++)
 			{
-				grids[(blocks[i].x + a) * gridx + (blocks[i].y + b)].setBlock(1);
+				grids[(blocks[i].getX() + a) * gridx + (blocks[i].getY() + b)].setBlock(1);
 			}
 		}
 	}
@@ -185,6 +185,7 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 		{
 			if (move.x == openpoints[i].x && move.y == openpoints[i].y)
 			{
+				cout << "openpoint »èÁ¦" << endl;
 				openpoints.erase(openpoints.begin() + i);
 			}
 		}

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <Windows.h>
+#include "Objects.h"
 
 using namespace std;
 
@@ -46,5 +47,5 @@ private:
 public:
 	void Init(int gridx, int gridy);
 
-	vector<POINT> Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<POINT>& blocks);
+	vector<POINT> Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks);
 };

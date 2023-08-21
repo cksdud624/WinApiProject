@@ -14,6 +14,28 @@ class Player;
 class Projectile;
 class DangerZone;
 class AnimationEffect;
+class Block;
+
+class Block
+{
+private:
+	int x;
+	int y;
+	int frame;
+	int leftframe;
+public:
+	Block();
+	int getX() { return x; }
+	int getY() { return y; }
+	int getLeftFrame() { return leftframe; }
+
+	void setX(int x) { this->x = x; }
+	void setY(int y) { this->y = y; }
+	void setleftframe(int leftframe) { this->leftframe = leftframe; }
+
+	void drawBlock(Graphics& g, Image* BlockImage, int GridXSize, int GridYSize);
+	void update();
+};
 
 class Arrow
 {
@@ -25,7 +47,7 @@ private:
 	int width;
 	int height;
 	int angle;
-	POINT* Collider;
+	POINT Collider[4];
 public:
 	double getX() { return x; }
 	double getY() { return y; }
@@ -56,6 +78,7 @@ private:
 	double y;
 	int speed;
 	int life;
+	int maxlife;
 	int pcount;
 
 	int width;
@@ -79,7 +102,7 @@ private:
 	//패링 시 잔상
 	vector<Point> illusion;
 	//공격 콜라이더
-	POINT* attackPoints;
+	POINT attackPoints[4];
 
 	//피격 효과
 	int lefthitframe;
@@ -97,6 +120,7 @@ public:
 	double getY() { return y; }
 	int getSpeed() { return speed; }
 	int getLife() { return life; }
+	int getMaxLife() { return maxlife; }
 	int getpCount() { return pcount; }
 	int getWidth() { return width; }
 	int getHeight() { return height; }
@@ -126,11 +150,11 @@ public:
 	void movePos(int pos);//이동
 	void spriteNFrame();//이동 애니메이션 프레임 설정
 	void action(Rect& rect, Graphics& g, Image*& playerAction,  ImageAttributes* &imageAtt);//이동 애니메이션
-	void correctPosition(RECT& rectView, vector<POINT>& blocks, int GridXSize, int GridYSize);//플레이어 위치 보정
+	void correctPosition(RECT& rectView, vector<Block>& blocks, int GridXSize, int GridYSize);//플레이어 위치 보정
 	void attackCollide(vector<Arrow>& arrows);//공격 충돌 판정
 	void attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrowAction  ,vector<Arrow>& arrows);//공격 애니메이션
-	void HitCheck(Monster& monster);//몬스터와의 충돌 체크
-	void ProjHitCheck(Monster& monster);//몬스터가 날리는 투사체와의 충돌체크
+	int HitCheck(Monster& monster);//몬스터와의 충돌 체크
+	int ProjHitCheck(Monster& monster);//몬스터가 날리는 투사체와의 충돌체크
 	int changeWeapon(UIIcon& WeaponIcon);//무기 변경
 	int cross(POINT a, POINT b, POINT c);//외적
 };
@@ -143,6 +167,7 @@ private:
 	int sizex;
 	int sizey;
 	int life;
+	int maxlife;
 
 	//투사체 
 	vector<Projectile> projectiles;
@@ -151,6 +176,9 @@ private:
 
 	//걷는 애니메이션
 	int walking;
+
+	//몬스터 그로기 애니메이션
+	int groggy;
 
 	//몬스터 애니메이션
 	int actionframe;
@@ -170,6 +198,8 @@ private:
 	int spriteX;
 	int spriteY;
 	int mpos;
+	int frame;
+	int leftframe;
 	
 
 public:
@@ -183,6 +213,7 @@ public:
 	time_t getPatterntime() { return patterntime; }
 	int getPatternStart() { return patternstart; }
 	int getLeftPatternProgress() { return leftpatternprogress; }
+	int getMaxLife() { return maxlife; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
@@ -193,24 +224,26 @@ public:
 	void setPatternStart(int patternstart) { this->patternstart = patternstart; }
 	void setWalking(int walking) { this->walking = walking; }
 	void setPatternTime(time_t patterntime) { this->patterntime = patterntime; }
+	void setGroggy(int groggy) { this->groggy = groggy; }
 
 	//몬스터 애니메이션
 	void action(Rect& rect, Graphics& g, Image*& bossAction);
 
 	//통상 상태
-	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<POINT>& blocks
+	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
 	, vector<AnimationEffect>& animationeffects);
 	//패턴 상태
 	void patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects);
-
+	//그로기 상태
+	void groggyMode();
 	int Randomize(int min, int max);
 
 	//투사체가 맵 밖으로 나가면 삭제
 	void CheckProjectilesOutofAreaorTime(RECT& rectView);
 	//몬스터 피격 판정
-	void HitCheck(Player& player, vector<Arrow>& arrows);
+	int HitCheck(Player& player, vector<Arrow>& arrows);
 	//투사체를 그림
-	void drawProjectiles(Graphics& g, Image*& effect, HDC& mem1dc);
+	void drawProjectiles(Graphics& g, Image*& effect, Image *& projectile);
 	//위험 구역을 그림
 	void drawDangerZones(Graphics& g, HDC& mem1dc);
 };
@@ -225,6 +258,8 @@ private:
 	int speed;
 	double angle;
 
+	int type;
+
 	int projectileframe;
 	int leftprojectileframe;
 public:
@@ -234,7 +269,8 @@ public:
 	int getRadius() { return radius; }
 	int getSpeed() { return speed; }
 	double getAngle() { return angle; }
-	int getLeftProjectileFrame(){ return leftprojectileframe; }
+	int getLeftProjectileFrame() { return leftprojectileframe; }
+	int getType() { return type; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
@@ -242,6 +278,7 @@ public:
 	void setSpeed(int speed) { this->speed = speed; }
 	void setAngle(double angle) { this->angle = angle; }
 	void setLeftProjectileFrame(int leftprojectileframe) { this->leftprojectileframe = leftprojectileframe; }
+	void setType(int type) { this->type = type; }
 
 	void movePos();
 };

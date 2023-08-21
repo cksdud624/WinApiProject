@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClInclude Include="Algorithms.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="functions.h" />
     <ClInclude Include="Objects.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -138,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Algorithms.cpp" />
+    <ClCompile Include="functions.cpp" />
     <ClCompile Include="Objects.cpp" />
     <ClCompile Include="UIItems.cpp" />
     <ClCompile Include="WinApiProject.cpp" />
