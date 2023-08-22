@@ -163,7 +163,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPED | WS_SYSMENU,
-      500, 0, 1016, 1159, nullptr, nullptr, hInstance, nullptr);
+      500, 0, 816, 959, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -820,7 +820,7 @@ void UIDraw(Graphics& g)
     rect.Width *= leftlife;
     g.DrawImage(UIBar[1], rect, 0, 0, UIBar[1]->GetWidth() * leftlife, UIBar[1]->GetHeight(), UnitPixel);
 
-    rect.X = 650;
+    rect.X = 500;
     rect.Y = rectViewUI.top + 32;
     rect.Width = 48 * 6;
     rect.Height = 16 * 2;
@@ -836,7 +836,7 @@ void UIDraw(Graphics& g)
     stringFormat.SetAlignment(StringAlignmentCenter);
     FontFamily fontFamily(L"돋움");
     Font font(&fontFamily, 17, FontStyleBold, UnitPixel);
-    PointF pointF(rectViewUI.right - 200, (rectViewUI.top + rectViewUI.bottom) / 2 - 11);
+    PointF pointF(rectViewUI.right - 150, (rectViewUI.top + rectViewUI.bottom) / 2 - 11);
     SolidBrush solidBrush(Color(255, 255, 255, 255));
 
     TCHAR text[100];
