@@ -238,6 +238,8 @@ Image* logo;
 Image* buttonimage;
 Image* stageselect;
 Image* stageselectbutton;
+Image* stageinfo;
+
 Image* playerAction;
 Image* swordAction;
 Image* spearAction;
@@ -246,6 +248,7 @@ Image* UIBackground;
 Image* arrowAction;
 Image* bossAction;
 Image* effect;
+Image* effect2;
 Image* terrain;
 Image* map;
 Image* UIBar[3];
@@ -253,7 +256,9 @@ Image* stone;
 Image* selecticon;
 Image* items;
 
-Image* damagefont[10];
+Image* signal[2];
+
+Image* imagefont[10];
 
 Image* ready;
 Image* fight;
@@ -264,6 +269,8 @@ TextureBrush* tbrush;
 int flip = 0;
 int patternhit = 0;
 int patternmode = 0;
+
+int timer = 0;
 
 int damage = 0;
 
@@ -320,6 +327,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         UIBackground = Image::FromFile(L"images/UIBackground.png");
         bossAction = Image::FromFile(L"images/Boss.png");
         effect = Image::FromFile(L"images/effect.png");
+        effect2 = Image::FromFile(L"images/effect2.png");
         terrain = Image::FromFile(L"images/terrain.png");
         map = Image::FromFile(L"images/map.png");
         stone = Image::FromFile(L"images/stone.png");
@@ -329,13 +337,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         gameover = Image::FromFile(L"images/gameover.png");
         stageclear = Image::FromFile(L"images/gameclear.png");
         items = Image::FromFile(L"images/items.png");
+        stageinfo = Image::FromFile(L"images/stageinfo.png");
 
         TCHAR temp[50];
 
         for (int i = 0; i < 10; i++)
         {
             _stprintf_s(temp, L"images/Fonts/%d.png", i);
-            damagefont[i] = Image::FromFile(temp);
+            imagefont[i] = Image::FromFile(temp);
         }
 
 
@@ -343,6 +352,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             _stprintf_s(temp, L"images/Bar/%d.png", i);
             UIBar[i - 1] = Image::FromFile(temp);
+        }
+
+        for (int i = 1; i < 3; i++)
+        {
+            _stprintf_s(temp, L"images/signal/%d.png", i);
+            signal[i - 1] = Image::FromFile(temp);
         }
 
         tbrush = new TextureBrush(map);
@@ -404,8 +419,13 @@ void Update()
 {
     if (gamepage == STAGE)
     {
-        if (clock() - gamemanage < 3000)
+        if (clock() - gamemanage < 2500)
             pause = 1;
+        else if (clock() - gamemanage < 3000)
+        {
+            pause = 1;
+            monster.setPatternTime(time(NULL));
+        }
         else
             pause = 0;
 
@@ -553,7 +573,7 @@ void DrawDoubleBuffering(HDC& hdc)
 
         for (int i = 0; i < animationeffects.size(); i++)
         {
-            animationeffects[i].drawAnimationEffect(g, effect);
+            animationeffects[i].drawAnimationEffect(g, effect, effect2);
         }
 
         for (int i = 0; i < damagetexts.size(); i++)
@@ -576,7 +596,7 @@ void DrawDoubleBuffering(HDC& hdc)
             for (int j = digit.size() - 1; j >= 0; j--)
             {
                 rect.X = damagetexts[i].getX() - rect.Width / 2 + (digit.size() - 1 - j) * rect.Width / 2 - correctpos;
-                g.DrawImage(damagefont[digit[j]], rect, 0, 0, 46, 92, UnitPixel);
+                g.DrawImage(imagefont[digit[j]], rect, 0, 0, 46, 92, UnitPixel);
             }
         }
 
@@ -696,12 +716,12 @@ void PlayerSystem()
 
 void MonsterSystem(vector<POINT>& route)
 {
-    int temp = time(NULL) - monster.getPatterntime();
+    timer = time(NULL) - monster.getPatterntime();
 
     if (patternmode == 0)
     {
         monster.normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks, animationeffects);
-        if (temp >= 60)
+        if (timer >= 60)
             patternmode = 1;
     }
     else if (patternmode == 1)
@@ -711,7 +731,7 @@ void MonsterSystem(vector<POINT>& route)
         {
             for (int i = 0; i < blocks.size(); i++)
             {
-                AnimationEffect animationeffect((blocks[i].getX() - 1) * GridXSize, (blocks[i].getY() - 1) * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+                AnimationEffect animationeffect((blocks[i].getX() - 1) * GridXSize, (blocks[i].getY() - 1) * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9, 1);
                 animationeffects.push_back(animationeffect);
 
             }
@@ -740,7 +760,7 @@ void MonsterSystem(vector<POINT>& route)
     }
     else if (patternmode == 2)
     {
-        if (temp >= 7)
+        if (timer >= 7)
         {
             monster.setPatternTime(time(NULL));
             monster.setPatternStart(0);
@@ -827,58 +847,94 @@ void UIDraw(Graphics& g)
 
     Weapontype.DrawUIIcon(g, selecticon);
 
-
-
-    rect.X = 10;
-    rect.Y = rectViewUI.top + 5;
-    rect.Width = 48 * 4;
-    rect.Height = 16 * 2;
-
-    g.DrawImage(UIBar[0], rect);
-
-    double leftlife = (double)player.getLife() / (double)player.getMaxLife();
-
-    rect.Width *= leftlife;
-    g.DrawImage(UIBar[1], rect, 0, 0, UIBar[1]->GetWidth() * leftlife, UIBar[1]->GetHeight(), UnitPixel);
-
-    rect.X = 480;
-    rect.Y = rectViewUI.top + 32;
-    rect.Width = 48 * 6;
-    rect.Height = 16 * 2;
-    g.DrawImage(UIBar[0], rect);
-
-    leftlife = (double)monster.getLife() / (double)monster.getMaxLife();
-
-    rect.Width *= leftlife;
-
-    g.DrawImage(UIBar[2], rect, 0, 0, UIBar[2]->GetWidth() * leftlife, UIBar[2]->GetHeight(), UnitPixel);
-
-    StringFormat stringFormat;
-    stringFormat.SetAlignment(StringAlignmentCenter);
-    FontFamily fontFamily(L"돋움");
-    Font font(&fontFamily, 17, FontStyleBold, UnitPixel);
-    PointF pointF(rectViewUI.right - 170, (rectViewUI.top + rectViewUI.bottom) / 2 - 1);
-    SolidBrush solidBrush(Color(255, 255, 255, 255));
-
-    TCHAR text[100];
-
-    _stprintf_s(text, L"%d", monster.getLife());
-    g.DrawString(text, -1, &font, pointF,  &stringFormat, &solidBrush);
-
-    PointF pointF2(110, rectViewUI.top + 12);
-    _stprintf_s(text, L"%d", player.getLife());
-    g.DrawString(text, -1, &font, pointF2, &stringFormat,&solidBrush);
-    rect.X = WeaponIcon[2].getX() + WeaponIcon[2].getWidth();
-    rect.Y = WeaponIcon[2].getY();
-    rect.Width = WeaponIcon[2].getWidth();
-    rect.Height = WeaponIcon[2].getHeight();
-    g.DrawImage(items, rect, 32 * 4, 32 * 9, 32, 32, UnitPixel);
-    if (item.getCount() <= 0)
     {
-        SolidBrush sbrush(Color(100, 0, 0, 0));
-        g.FillRectangle(&sbrush, rect);
+        rect.X = 10;
+        rect.Y = rectViewUI.top + 5;
+        rect.Width = 48 * 4;
+        rect.Height = 16 * 2;
+
+        g.DrawImage(UIBar[0], rect);
+        double leftlife = (double)player.getLife() / (double)player.getMaxLife();
+        rect.Width *= leftlife;
+        g.DrawImage(UIBar[1], rect, 0, 0, UIBar[1]->GetWidth() * leftlife, UIBar[1]->GetHeight(), UnitPixel);
+
+        rect.X = 300;
+        rect.Y = rectViewUI.top + 5;
+        rect.Width = 48 * 6;
+        rect.Height = 16 * 2;
+        g.DrawImage(UIBar[0], rect);
+
+        leftlife = (double)monster.getLife() / (double)monster.getMaxLife();
+
+        rect.Width *= leftlife;
+
+        g.DrawImage(UIBar[2], rect, 0, 0, UIBar[2]->GetWidth() * leftlife, UIBar[2]->GetHeight(), UnitPixel);
     }
 
+    {
+        StringFormat stringFormat;
+        stringFormat.SetAlignment(StringAlignmentCenter);
+        FontFamily fontFamily(L"돋움");
+        Font font(&fontFamily, 17, FontStyleBold, UnitPixel);
+        PointF pointF(445, rectViewUI.top + 12);
+        PointF pointF2(110, rectViewUI.top + 12);
+        SolidBrush solidBrush(Color(255, 255, 255, 255));
+
+        TCHAR text[100];
+
+        _stprintf_s(text, L"%d", monster.getLife());
+        g.DrawString(text, -1, &font, pointF, &stringFormat, &solidBrush);
+        _stprintf_s(text, L"%d", player.getLife());
+        g.DrawString(text, -1, &font, pointF2, &stringFormat, &solidBrush);
+        rect.X = WeaponIcon[2].getX() + WeaponIcon[2].getWidth();
+        rect.Y = WeaponIcon[2].getY();
+        rect.Width = WeaponIcon[2].getWidth();
+        rect.Height = WeaponIcon[2].getHeight();
+        g.DrawImage(items, rect, 32 * 4, 32 * 9, 32, 32, UnitPixel);
+        if (item.getCount() <= 0)
+        {
+            SolidBrush sbrush(Color(100, 0, 0, 0));
+            g.FillRectangle(&sbrush, rect);
+        }
+    }
+
+    {
+        rect.X = 300;
+        rect.Y = rectViewUI.top + 35;
+        rect.Width = 50;
+        rect.Height = 50;
+
+        if (patternhit <= 5)
+            g.DrawImage(signal[0], rect);
+        else
+            g.DrawImage(signal[1], rect);
+    }
+
+    {
+        rect.X = 600;
+        rect.Y = rectViewUI.top;
+        rect.Width = 100;
+        rect.Height = 70;
+        g.DrawImage(stageinfo, rect);
+
+
+        rect.X += 80;
+        rect.Width = 50;
+        g.DrawImage(imagefont[1], rect);
+    }
+
+    {
+        TCHAR temp[10];
+        StringFormat stringFormat;
+        stringFormat.SetAlignment(StringAlignmentCenter);
+        FontFamily fontFamily(L"돋움");
+        Font font(&fontFamily, 27, FontStyleBold, UnitPixel);
+        PointF pointF(380, rectViewUI.top + 45);
+        SolidBrush solidBrush(Color(255, 0, 0, 0));
+
+        _stprintf_s(temp, L"%d", timer);
+        g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
+    }
 }
 
 

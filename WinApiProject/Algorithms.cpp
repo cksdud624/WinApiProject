@@ -187,6 +187,7 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 			{
 				cout << "openpoint »èÁ¦" << endl;
 				openpoints.erase(openpoints.begin() + i);
+				break;
 			}
 		}
 		currentG = grids[move.x * gridx + move.y].getG();

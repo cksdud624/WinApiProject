@@ -381,7 +381,7 @@ void Player::useItem(Item& item, vector<AnimationEffect>& animationeffects)
 					life += item.getNum();
 					if (life > maxlife)
 						life = maxlife;
-					AnimationEffect animationeffect(x, y, width, height, 0, 9);
+					AnimationEffect animationeffect(x - width * 2, y - height * 2, width * 4, height * 4, 0, 6, 2);
 					animationeffects.push_back(animationeffect);
 				}
 			}
@@ -450,7 +450,7 @@ int Player::HitCheck(Monster& monster, vector<AnimationEffect>& animationeffects
 	if (check == 1 && lefthitframe <= 0)
 	{
 		lefthitframe = hitframe;
-		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 		animationeffects.push_back(animationeffect);
 		life -= 5;
 		return 5;
@@ -493,7 +493,7 @@ int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeff
 	{
 		lefthitframe = hitframe;
 		life -= 5;
-		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 		animationeffects.push_back(animationeffect);
 		return 5;
 	}
@@ -725,8 +725,8 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 		int playery = player.getY() / GridYSize;
 		if (leftactionframe == actionframe)
 		{
-			int pointx = Randomize(0, grids.x - 1);
-			int pointy = Randomize(0, grids.y - 1);
+			int pointx = Randomize(1, grids.x - 2);
+			int pointy = Randomize(1, grids.y - 2);
 			
 			int check = 0;
 			for (int i = 0; i < blocks.size(); i++)
@@ -756,7 +756,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 		{
 			for (int i = 0; i < blocks.size(); i++)
 			{
-				AnimationEffect animationeffect(blocks[i].getX() * GridXSize, blocks[i].getY() * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9);
+				AnimationEffect animationeffect(blocks[i].getX() * GridXSize, blocks[i].getY() * GridYSize, GridXSize * 2, GridYSize * 2, 0, 9, 1);
 				animationeffects.push_back(animationeffect);
 			}
 
@@ -974,7 +974,7 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 		if (count % 2 == 1)
 		{
 			hitcheck = 1;
-			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 			animationeffects.push_back(animationeffect);
 			break;
 		}
@@ -1037,7 +1037,7 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 		if (arrowcheck == 1)
 		{
 			arrows.erase(arrows.begin() + v);
-			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 			animationeffects.push_back(animationeffect);
 			break;
 		}
@@ -1118,7 +1118,7 @@ void Projectile::movePos()
 	y = y + speed * sin(angle / 180 * M_PI);
 }
 
-AnimationEffect::AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY)
+AnimationEffect::AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY, int type)
 {
 	effectframe = 10;
 	lefteffectframe = 0;
@@ -1126,18 +1126,22 @@ AnimationEffect::AnimationEffect(double x, double y, int width, int height, int 
 	this->y = y;
 	this->spriteX = spriteX;
 	this->spriteY = spriteY;
+	this->type = type;
 	this->width = width;
 	this->height = height;
 }
 
-void AnimationEffect::drawAnimationEffect(Graphics& g, Image*& effect)
+void AnimationEffect::drawAnimationEffect(Graphics& g, Image*& effect, Image*& effect2)
 {
 	Rect rect;
 	rect.X = x;
 	rect.Y = y;
 	rect.Width = width;
 	rect.Height = height;
-	g.DrawImage(effect, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	if(type == 1)
+		g.DrawImage(effect, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	else
+		g.DrawImage(effect2, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
 	spriteX++;
 }
 
@@ -1166,7 +1170,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 
 		projectiles.push_back(projectile);
 
-		AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9);
+		AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 1);
 		animationeffects.push_back(animationeffect);
 		return 1;
 	}

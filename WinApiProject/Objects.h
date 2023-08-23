@@ -293,15 +293,18 @@ private:
 	int width;
 	int height;
 
+	int type;
+
 	int lefteffectframe;
 	int effectframe;
 
 	int spriteX;
 	int spriteY;
 public:
-	AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY);
+	AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY, int type);
+	void setType(int type) { this->type = type; }
 	int getSpriteX() { return spriteX; }
-	void drawAnimationEffect(Graphics& g, Image*& effect);
+	void drawAnimationEffect(Graphics& g, Image*& effect, Image*& effect2);
 };
 
 class DangerZone
