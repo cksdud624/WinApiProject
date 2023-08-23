@@ -209,8 +209,8 @@ const POINT Grids = { 25, 25 };
 //턴제 격자 사이즈
 int GridXSize;
 int GridYSize;
-
-
+//아이템
+Item item;
 //마우스 위치
 int mouseposX = -100;
 int mouseposY = -100;
@@ -251,6 +251,9 @@ Image* map;
 Image* UIBar[3];
 Image* stone;
 Image* selecticon;
+Image* items;
+
+Image* damagefont[10];
 
 Image* ready;
 Image* fight;
@@ -325,8 +328,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         fight = Image::FromFile(L"images/fight.png");
         gameover = Image::FromFile(L"images/gameover.png");
         stageclear = Image::FromFile(L"images/gameclear.png");
+        items = Image::FromFile(L"images/items.png");
 
         TCHAR temp[50];
+
+        for (int i = 0; i < 10; i++)
+        {
+            _stprintf_s(temp, L"images/Fonts/%d.png", i);
+            damagefont[i] = Image::FromFile(temp);
+        }
+
+
         for (int i = 1; i < 4; i++)
         {
             _stprintf_s(temp, L"images/Bar/%d.png", i);
@@ -432,13 +444,13 @@ void Update()
                 blocks[i].update();
             }
 
-            int hit = player.HitCheck(monster);
-            int projhit = player.ProjHitCheck(monster);
+            int hit = player.HitCheck(monster, animationeffects);
+            int projhit = player.ProjHitCheck(monster, animationeffects);
 
             if (patternmode == 1 && (hit > 0 || projhit > 0))
                 patternhit++;
 
-            int monhit = monster.HitCheck(player, arrows);
+            int monhit = monster.HitCheck(player, arrows, animationeffects);
 
             for (int i = 0; i < animationeffects.size(); i++)
             {
@@ -543,25 +555,28 @@ void DrawDoubleBuffering(HDC& hdc)
         {
             animationeffects[i].drawAnimationEffect(g, effect);
         }
-        TCHAR temp[50];
-        StringFormat stringFormat;
-        stringFormat.SetAlignment(StringAlignmentCenter);
-        FontFamily fontFamily(L"돋움");
-        Font font(&fontFamily, 24, FontStyleBold, UnitPixel);
 
         for (int i = 0; i < damagetexts.size(); i++)
         {
-            PointF pointF(damagetexts[i].getX(), damagetexts[i].getY() - damagetexts[i].getOverLen());
-            _stprintf_s(temp, L"%d", damagetexts[i].getDamage());
-            if (damagetexts[i].getType() == 0)
+            int damage = damagetexts[i].getDamage();
+            rect.Width = 34;
+            rect.Height = 72;
+            rect.Y = damagetexts[i].getY() - damagetexts[i].getOverLen() - rect.Height / 4;
+            
+            vector<int> digit;
+
+            while (damage != 0)
             {
-                SolidBrush solidBrush(Color(255, 255, 0, 0));
-                g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
+                digit.push_back(damage % 10);
+                damage /= 10;
             }
-            else
+
+            int correctpos = (digit.size() - 1) * rect.Width / 4;
+
+            for (int j = digit.size() - 1; j >= 0; j--)
             {
-                SolidBrush solidBrush(Color(255, 0, 255, 50));
-                g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
+                rect.X = damagetexts[i].getX() - rect.Width / 2 + (digit.size() - 1 - j) * rect.Width / 2 - correctpos;
+                g.DrawImage(damagefont[digit[j]], rect, 0, 0, 46, 92, UnitPixel);
             }
         }
 
@@ -655,6 +670,11 @@ void StartSetting(HDC& hdc)
     UISetting();
 
     astar.Init(Grids.x, Grids.y);
+
+    item.setType(0);
+    item.setName("potion");
+    item.setNum(20);
+    item.setCount(1);
 }
 
 void PlayerSystem()
@@ -664,6 +684,7 @@ void PlayerSystem()
     player.correctPosition(rectView, blocks, GridXSize, GridYSize);//맵 밖으로 나가지 않게 함
     player.spriteNFrame();//스프라이트와 프레임 설정
     player.attackCollide(arrows);//공격 충돌 판정
+    player.useItem(item, animationeffects);
 
     for (int i = 0; i < arrows.size(); i++)
     {
@@ -703,7 +724,7 @@ void MonsterSystem(vector<POINT>& route)
         {
             monster.setPatternTime(time(NULL));
 
-            if (patternhit <= 4)
+            if (patternhit <= 5)
             {
                 monster.setPatternStart(2);
                 monster.groggyMode();
@@ -763,10 +784,10 @@ void UISetting()
 
     for (int i = 0; i < 3; i++)
     {
-        WeaponIcon[i].setWidth(rectViewUI.bottom - rectViewUI.top - 20);
-        WeaponIcon[i].setHeight(rectViewUI.bottom - rectViewUI.top - 20);
-        WeaponIcon[i].setX(rectViewUI.left + 30 + i * WeaponIcon[i].getWidth());
-        WeaponIcon[i].setY((rectViewUI.bottom + rectViewUI.top) / 2 - WeaponIcon[i].getHeight() / 2);
+        WeaponIcon[i].setWidth(rectViewUI.bottom - rectViewUI.top - 45);
+        WeaponIcon[i].setHeight(rectViewUI.bottom - rectViewUI.top - 45);
+        WeaponIcon[i].setX(rectViewUI.left + 30 + i * WeaponIcon[i].getWidth() - 20);
+        WeaponIcon[i].setY((rectViewUI.bottom + rectViewUI.top) / 2 - WeaponIcon[i].getHeight() / 2 + 10);
         WeaponIcon[i].setSizeX(32);
         WeaponIcon[i].setSizeY(32);
         WeaponIcon[i].setPosX(0);
@@ -777,10 +798,10 @@ void UISetting()
         WeaponIcon[i].setPosY(0);
     }
 
-    Weapontype.setWidth(rectViewUI.bottom - rectViewUI.top - 20);
-    Weapontype.setHeight(rectViewUI.bottom - rectViewUI.top - 20);
-    Weapontype.setX(30);
-    Weapontype.setY((rectViewUI.bottom + rectViewUI.top) / 2 - Weapontype.getHeight() / 2);
+    Weapontype.setWidth(rectViewUI.bottom - rectViewUI.top - 45);
+    Weapontype.setHeight(rectViewUI.bottom - rectViewUI.top - 45);
+    Weapontype.setX(10);
+    Weapontype.setY((rectViewUI.bottom + rectViewUI.top) / 2 - Weapontype.getHeight() / 2 + 10);
     Weapontype.setSizeX(32);
     Weapontype.setSizeY(32);
     Weapontype.setPosX(0);
@@ -808,8 +829,8 @@ void UIDraw(Graphics& g)
 
 
 
-    rect.X = 300;
-    rect.Y = rectViewUI.top + 32;
+    rect.X = 10;
+    rect.Y = rectViewUI.top + 5;
     rect.Width = 48 * 4;
     rect.Height = 16 * 2;
 
@@ -820,7 +841,7 @@ void UIDraw(Graphics& g)
     rect.Width *= leftlife;
     g.DrawImage(UIBar[1], rect, 0, 0, UIBar[1]->GetWidth() * leftlife, UIBar[1]->GetHeight(), UnitPixel);
 
-    rect.X = 500;
+    rect.X = 480;
     rect.Y = rectViewUI.top + 32;
     rect.Width = 48 * 6;
     rect.Height = 16 * 2;
@@ -836,7 +857,7 @@ void UIDraw(Graphics& g)
     stringFormat.SetAlignment(StringAlignmentCenter);
     FontFamily fontFamily(L"돋움");
     Font font(&fontFamily, 17, FontStyleBold, UnitPixel);
-    PointF pointF(rectViewUI.right - 150, (rectViewUI.top + rectViewUI.bottom) / 2 - 11);
+    PointF pointF(rectViewUI.right - 170, (rectViewUI.top + rectViewUI.bottom) / 2 - 1);
     SolidBrush solidBrush(Color(255, 255, 255, 255));
 
     TCHAR text[100];
@@ -844,9 +865,20 @@ void UIDraw(Graphics& g)
     _stprintf_s(text, L"%d", monster.getLife());
     g.DrawString(text, -1, &font, pointF,  &stringFormat, &solidBrush);
 
-    PointF pointF2(400, (rectViewUI.top + rectViewUI.bottom) / 2 - 12);
+    PointF pointF2(110, rectViewUI.top + 12);
     _stprintf_s(text, L"%d", player.getLife());
     g.DrawString(text, -1, &font, pointF2, &stringFormat,&solidBrush);
+    rect.X = WeaponIcon[2].getX() + WeaponIcon[2].getWidth();
+    rect.Y = WeaponIcon[2].getY();
+    rect.Width = WeaponIcon[2].getWidth();
+    rect.Height = WeaponIcon[2].getHeight();
+    g.DrawImage(items, rect, 32 * 4, 32 * 9, 32, 32, UnitPixel);
+    if (item.getCount() <= 0)
+    {
+        SolidBrush sbrush(Color(100, 0, 0, 0));
+        g.FillRectangle(&sbrush, rect);
+    }
+
 }
 
 

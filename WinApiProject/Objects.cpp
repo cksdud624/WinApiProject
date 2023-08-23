@@ -365,7 +365,31 @@ void Player::attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrow
 	}
 }
 
-int Player::HitCheck(Monster& monster)
+void Player::useItem(Item& item, vector<AnimationEffect>& animationeffects)
+{
+	if (item.getType() == 0)
+	{
+		if (GetKeyState('4') < 0)
+		{
+			int count = item.getCount();
+			if (count > 0)
+			{
+				if (life < maxlife)
+				{
+					count--;
+					item.setCount(count);
+					life += item.getNum();
+					if (life > maxlife)
+						life = maxlife;
+					AnimationEffect animationeffect(x, y, width, height, 0, 9);
+					animationeffects.push_back(animationeffect);
+				}
+			}
+		}
+	}
+}
+
+int Player::HitCheck(Monster& monster, vector<AnimationEffect>& animationeffects)
 {
 	POINT playerCollider[4] = { {x - width, y - height}, {x - width, y + height},
 		{x + width, y + height}, {x + width, y - height} };//플레이어 콜라이더
@@ -426,6 +450,8 @@ int Player::HitCheck(Monster& monster)
 	if (check == 1 && lefthitframe <= 0)
 	{
 		lefthitframe = hitframe;
+		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+		animationeffects.push_back(animationeffect);
 		life -= 5;
 		return 5;
 	}
@@ -435,7 +461,7 @@ int Player::HitCheck(Monster& monster)
 
 
 
-int Player::ProjHitCheck(Monster &monster)
+int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeffects)
 {
 	vector<Projectile> projectiles = monster.getProjectiles();
 	int check = 0;
@@ -467,6 +493,8 @@ int Player::ProjHitCheck(Monster &monster)
 	{
 		lefthitframe = hitframe;
 		life -= 5;
+		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+		animationeffects.push_back(animationeffect);
 		return 5;
 	}
 	return 0;
@@ -478,19 +506,19 @@ int Player::changeWeapon(UIIcon& WeaponIcon)
 	if (GetKeyState('1') < 0)
 	{
 		weapon = 1;
-		WeaponIcon.setX(30);
+		WeaponIcon.setX(10);
 		return 1;
 	}
 	else if (GetKeyState('2') < 0)
 	{
 		weapon = 2;
-		WeaponIcon.setX(30 + WeaponIcon.getWidth());
+		WeaponIcon.setX(10 + WeaponIcon.getWidth());
 		return 1;
 	}
 	else if (GetKeyState('3') < 0)
 	{
 		weapon = 3;
-		WeaponIcon.setX(30 + 2 * WeaponIcon.getWidth());
+		WeaponIcon.setX(10 + 2 * WeaponIcon.getWidth());
 		return 1;
 	}
 	return 0;
@@ -596,6 +624,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	{
 		leftactionframe = actionframe;
 		pattern = Randomize(1, 4);
+		cout << pattern << endl;
 	}
 
 	if (route.size() == 0)
@@ -704,7 +733,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 			{
 				if ((pointx == blocks[i].getX() && pointy == blocks[i].getY()) ||
 					(pointx == playerx && pointy == playery)
-					|| (abs(pointx - x) <=  1 && abs(pointy - y) <= 1))
+					|| (abs(pointx - x) <=  2 && abs(pointy - y) <= 2))
 				{
 					check = 1;
 					break;
@@ -814,7 +843,7 @@ void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gr
 		{
 			Projectile projectile;
 			projectile.setSpeed(20);
-			projectile.setRadius(40);
+			projectile.setRadius(35);
 			int direction = Randomize(1, 4) * 2;
 			int pointx = Randomize(1, GridXSize - 2);
 			int pointy = Randomize(1, GridYSize - 2);
@@ -891,7 +920,7 @@ void Monster::CheckProjectilesOutofAreaorTime(RECT& rectView)
 	}
 }
 
-int Monster::HitCheck(Player& player, vector<Arrow>& arrows)
+int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects)
 {
 	POINT* attackpoints = player.getAttackPoints();
 	POINT monsterCollider[4] = { {x - sizex / 2, y - sizey / 2},
@@ -945,13 +974,15 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows)
 		if (count % 2 == 1)
 		{
 			hitcheck = 1;
+			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+			animationeffects.push_back(animationeffect);
 			break;
 		}
 	}
 	int arrowcheck = 0;
-	for (int x = 0; x < arrows.size(); x++)
+	for (int v = 0; v < arrows.size(); v++)
 	{
-		POINT* arrowCollider = arrows[x].getCollider();
+		POINT* arrowCollider = arrows[v].getCollider();
 		arrowcheck = 0;
 		for (int i = 0; i < 4; i++)
 		{
@@ -1005,7 +1036,9 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows)
 
 		if (arrowcheck == 1)
 		{
-			arrows.erase(arrows.begin() + x);
+			arrows.erase(arrows.begin() + v);
+			AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12);
+			animationeffects.push_back(animationeffect);
 			break;
 		}
 	}

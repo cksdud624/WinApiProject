@@ -26,5 +26,6 @@
 #include "Algorithms.h"
 #include "Tools.h"
 #include "functions.h"
+#include "Items.h"
 
 #pragma comment(lib, "gdiplus.lib") 

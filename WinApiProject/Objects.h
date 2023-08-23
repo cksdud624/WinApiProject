@@ -4,6 +4,7 @@
 #include <gdiplus.h>
 #include <vector>
 #include "UIItems.h"
+#include "Items.h"
 
 using namespace Gdiplus;
 using namespace std;
@@ -153,8 +154,9 @@ public:
 	void correctPosition(RECT& rectView, vector<Block>& blocks, int GridXSize, int GridYSize);//플레이어 위치 보정
 	void attackCollide(vector<Arrow>& arrows);//공격 충돌 판정
 	void attack(Rect& rect, Graphics& g, Image*& attackAction, Image*& arrowAction  ,vector<Arrow>& arrows);//공격 애니메이션
-	int HitCheck(Monster& monster);//몬스터와의 충돌 체크
-	int ProjHitCheck(Monster& monster);//몬스터가 날리는 투사체와의 충돌체크
+	void useItem(Item& item, vector<AnimationEffect>& animationeffects);//아이템 사용
+	int HitCheck(Monster& monster, vector<AnimationEffect>& animationeffects);//몬스터와의 충돌 체크
+	int ProjHitCheck(Monster& monster, vector<AnimationEffect>& animationeffects);//몬스터가 날리는 투사체와의 충돌체크
 	int changeWeapon(UIIcon& WeaponIcon);//무기 변경
 	int cross(POINT a, POINT b, POINT c);//외적
 };
@@ -241,7 +243,7 @@ public:
 	//투사체가 맵 밖으로 나가면 삭제
 	void CheckProjectilesOutofAreaorTime(RECT& rectView);
 	//몬스터 피격 판정
-	int HitCheck(Player& player, vector<Arrow>& arrows);
+	int HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects);
 	//투사체를 그림
 	void drawProjectiles(Graphics& g, Image*& effect, Image *& projectile);
 	//위험 구역을 그림
