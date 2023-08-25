@@ -163,7 +163,7 @@ public:
 
 class Monster
 {
-private:
+protected:
 	double x;
 	double y;
 	int sizex;
@@ -202,7 +202,10 @@ private:
 	int mpos;
 	int frame;
 	int leftframe;
+
+	int walkingframe;
 	
+	int spritechanger;
 
 public:
 	Monster();
@@ -228,16 +231,19 @@ public:
 	void setPatternTime(time_t patterntime) { this->patterntime = patterntime; }
 	void setGroggy(int groggy) { this->groggy = groggy; }
 
+
+	//투사체 이동
+	void moveProjectilesPos();
 	//몬스터 애니메이션
 	void action(Rect& rect, Graphics& g, Image*& bossAction);
 
 	//통상 상태
-	void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
+	virtual void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
 	, vector<AnimationEffect>& animationeffects);
 	//패턴 상태
-	void patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects);
+	virtual void patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects);
 	//그로기 상태
-	void groggyMode();
+	virtual void groggyMode();
 	int Randomize(int min, int max);
 
 	//투사체가 맵 밖으로 나가면 삭제
@@ -245,9 +251,11 @@ public:
 	//몬스터 피격 판정
 	int HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects);
 	//투사체를 그림
-	void drawProjectiles(Graphics& g, Image*& effect, Image *& projectile);
+	void drawProjectiles(Graphics& g, Image** effect, Image*& projectile, Image*& projectile2);
 	//위험 구역을 그림
 	void drawDangerZones(Graphics& g, HDC& mem1dc);
+	//투사체, 레드존 초기화
+	void clearDangerZone();
 };
 
 class Projectile
@@ -264,6 +272,9 @@ private:
 
 	int projectileframe;
 	int leftprojectileframe;
+
+	int spriteX;
+	int spriteY;
 public:
 	Projectile();
 	double getX() { return x; }
@@ -273,6 +284,8 @@ public:
 	double getAngle() { return angle; }
 	int getLeftProjectileFrame() { return leftprojectileframe; }
 	int getType() { return type; }
+	int getSpriteX() { return spriteX; }
+	int getSpriteY() { return spriteY; }
 
 	void setX(double x) { this->x = x; }
 	void setY(double y) { this->y = y; }
@@ -281,6 +294,8 @@ public:
 	void setAngle(double angle) { this->angle = angle; }
 	void setLeftProjectileFrame(int leftprojectileframe) { this->leftprojectileframe = leftprojectileframe; }
 	void setType(int type) { this->type = type; }
+	void setSpriteX(int spriteX) { this->spriteX = spriteX; }
+	void setSpriteY(int spriteY) { this->spriteY = spriteY; }
 
 	void movePos();
 };
@@ -304,7 +319,7 @@ public:
 	AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY, int type);
 	void setType(int type) { this->type = type; }
 	int getSpriteX() { return spriteX; }
-	void drawAnimationEffect(Graphics& g, Image*& effect, Image*& effect2);
+	void drawAnimationEffect(Graphics& g, Image** effect);
 };
 
 class DangerZone
@@ -315,8 +330,10 @@ private:
 	int radius;
 	int frame;
 	int leftframe;
+	int zonetype;
+	int variation;
 public:
-	DangerZone();
+	DangerZone(int frame, int zonetype,int variation);
 	double getX() { return x; }
 	double getY() { return y; }
 	int getRadius() { return radius; }

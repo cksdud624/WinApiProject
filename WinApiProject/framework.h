@@ -27,5 +27,6 @@
 #include "Tools.h"
 #include "functions.h"
 #include "Items.h"
+#include "MonsterType.h"
 
 #pragma comment(lib, "gdiplus.lib") 

@@ -580,6 +580,8 @@ Monster::Monster()
 
 	frame = 12;
 	leftframe = 0;
+
+	walkingframe = 1;
 }
 
 void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
@@ -588,6 +590,7 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	rect.Y = y - sizey / 2;
 	rect.Width = sizex;
 	rect.Height = sizey;
+	walkingframe = 1 - walkingframe;
 
 	if (groggy == 1)
 	{
@@ -597,10 +600,13 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 	}
 	else if (walking == 1)
 	{
-		if (spriteX == 0 || spriteX >= 3)
-			spriteX = 1;
-		else
-			spriteX++;
+		if (walkingframe == 0)
+		{
+			if (spriteX == 0 || spriteX >= 3)
+				spriteX = 1;
+			else
+				spriteX++;
+		}
 	}
 
 	g.DrawImage(bossAction, rect, 144 * spriteX, 144 * spriteY, 144, 144, UnitPixel);
@@ -609,13 +615,8 @@ void Monster::action(Rect& rect, Graphics& g, Image*& bossAction)
 void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
 , vector<AnimationEffect>& animationeffects)
 {
-	for (int i = 0; i < projectiles.size(); i++)
-	{
-		projectiles[i].movePos();
-	}
-
+	moveProjectilesPos();
 	CheckProjectilesOutofAreaorTime(rectView);
-
 
 
 	if (leftactionframe > 0)
@@ -770,6 +771,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				projectile.setSpeed(20);
 				projectile.setRadius(20);
 				projectile.setAngle(45 * i + leftactionframe * 2);
+				projectile.setType(0);
 				projectiles.push_back(projectile);
 			}
 		}
@@ -878,7 +880,7 @@ void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gr
 	{
 		if (leftpatternprogress % 10 == 0)
 		{
-			DangerZone dangerzone;
+			DangerZone dangerzone(10, 0, 0);
 			dangerzone.setX(player.getX());
 			dangerzone.setY(player.getY());
 			dangerzone.setRadius(150);
@@ -918,6 +920,15 @@ void Monster::CheckProjectilesOutofAreaorTime(RECT& rectView)
 			i = -1;
 		}
 	}
+}
+
+void Monster::moveProjectilesPos()
+{
+	for (int i = 0; i < projectiles.size(); i++)
+	{
+		projectiles[i].movePos();
+	}
+
 }
 
 int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects)
@@ -1068,6 +1079,11 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 	return 0;
 }
 
+void Monster::clearDangerZone()
+{
+	dangerzones.clear();
+}
+
 void Monster::groggyMode()
 {
 	spriteX = 0;
@@ -1076,20 +1092,46 @@ void Monster::groggyMode()
 	leftframe = frame;
 }
 
-void Monster::drawProjectiles(Graphics& g, Image*& effect,Image*& projectile)
+void Monster::drawProjectiles(Graphics& g, Image** effect,Image*& projectile, Image*& projectile2)
 {
+	ColorMatrix colorMatrix = {
+   2.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+   0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+   0.2f, 0.2f, 0.2f, 0.0f, 1.0f };
+
+	ImageAttributes imageAttributes;
+		imageAttributes.SetColorMatrix(&colorMatrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
+
 	for (int i = 0; i < projectiles.size(); i++)
 	{
+		Rect rect;
+		rect.X = projectiles[i].getX() - projectiles[i].getRadius();
+		rect.Y = projectiles[i].getY() - projectiles[i].getRadius();
+		rect.Width = projectiles[i].getRadius() * 2;
+		rect.Height = projectiles[i].getRadius() * 2;
 		if (projectiles[i].getType() == 0)
 		{
-			Rect rect;
-			rect.X = projectiles[i].getX() - projectiles[i].getRadius();
-			rect.Y = projectiles[i].getY() - projectiles[i].getRadius();
-			rect.Width = projectiles[i].getRadius() * 2;
-			rect.Height = projectiles[i].getRadius() * 2;
-			g.DrawImage(projectile, rect);
+			g.DrawImage(projectile, rect, 0, 0, projectile->GetWidth(), projectile->GetHeight(), UnitPixel, &imageAttributes);
+		}
+		else if (projectiles[i].getType() == 1)
+		{
+		}
+		else if (projectiles[i].getType() == 2)
+		{
+			if (projectiles[i].getSpriteX() == 3 || projectiles[i].getSpriteX() == 4)
+				projectiles[i].setSpriteX(7 - projectiles[i].getSpriteX());
+			else
+				projectiles[i].setSpriteX(projectiles[i].getSpriteX() + 1);
+			g.DrawImage(projectile2, rect, projectiles[i].getSpriteX() * 24, 0, 24, 32, UnitPixel);
+		}
+		else if (projectiles[i].getType() == 3)
+		{
+			g.DrawImage(effect[2], rect, 32 * (2 + spritechanger), 32, 32, 32, UnitPixel);
 		}
 	}
+	spritechanger = 1 - spritechanger;
 }
 
 void Monster::drawDangerZones(Graphics& g, HDC& mem1dc)
@@ -1110,6 +1152,8 @@ Projectile::Projectile()
 {
 	leftprojectileframe = -1;
 	type = 0;
+	spriteX = 0;
+	spriteY = 0;
 }
 
 void Projectile::movePos()
@@ -1131,17 +1175,19 @@ AnimationEffect::AnimationEffect(double x, double y, int width, int height, int 
 	this->height = height;
 }
 
-void AnimationEffect::drawAnimationEffect(Graphics& g, Image*& effect, Image*& effect2)
+void AnimationEffect::drawAnimationEffect(Graphics& g, Image** effect)
 {
 	Rect rect;
 	rect.X = x;
 	rect.Y = y;
 	rect.Width = width;
 	rect.Height = height;
-	if(type == 1)
-		g.DrawImage(effect, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
-	else
-		g.DrawImage(effect2, rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	if (type == 1)
+		g.DrawImage(effect[0], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	else if (type == 2)
+		g.DrawImage(effect[1], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	else if (type == 3)
+		g.DrawImage(effect[2], rect, 32 * (6 + (spriteX / 3)), 32, 32, 32, UnitPixel);
 	spriteX++;
 }
 
@@ -1150,9 +1196,11 @@ void DangerZone::activatezone()
 	leftframe = frame;
 }
 
-DangerZone::DangerZone()
+DangerZone::DangerZone(int frame, int zonetype, int variation)
 {
-	frame = 10;
+	this->frame = frame;
+	this->zonetype = zonetype;
+	this->variation = variation;
 }
 
 int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffect>& animationeffects)
@@ -1160,18 +1208,62 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 	leftframe--;
 	if (leftframe <= 0)
 	{
-		Projectile projectile;
-		projectile.setX(x);
-		projectile.setY(y);
-		projectile.setRadius(radius / 2);
-		projectile.setSpeed(0);
-		projectile.setLeftProjectileFrame(10);
-		projectile.setType(1);
+		if (zonetype == 0)
+		{
+			if (variation == 0)//stage1
+			{
+				Projectile projectile;
+				projectile.setX(x);
+				projectile.setY(y);
+				projectile.setRadius(radius / 2);
+				projectile.setSpeed(0);
+				projectile.setLeftProjectileFrame(10);
+				projectile.setType(1);
 
-		projectiles.push_back(projectile);
+				projectiles.push_back(projectile);
 
-		AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 1);
-		animationeffects.push_back(animationeffect);
+				AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 1);
+				animationeffects.push_back(animationeffect);
+			}
+			else if (variation == 1)//stage2
+			{
+				Projectile projectile;
+				projectile.setX(x);
+				projectile.setY(y);
+				projectile.setRadius(radius / 2);
+				projectile.setSpeed(0);
+				projectile.setLeftProjectileFrame(10);
+				projectile.setType(1);
+				projectiles.push_back(projectile);
+
+				for (int i = 0; i < 6; i++)
+				{
+					Projectile projectile;
+					projectile.setX(x);
+					projectile.setY(y);
+					projectile.setRadius(radius / 4);
+					projectile.setSpeed(10);
+					projectile.setType(3);
+					projectile.setAngle(60 * i);
+					projectiles.push_back(projectile);
+				}
+
+				AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 3);
+				animationeffects.push_back(animationeffect);
+			}
+		}
+		else if (zonetype == 1)
+		{
+			Projectile projectile;
+			projectile.setX(x);
+			projectile.setY(y);
+			projectile.setRadius(radius / 2);
+			projectile.setSpeed(0);
+			projectile.setLeftProjectileFrame(100);
+			projectile.setType(2);
+
+			projectiles.push_back(projectile);
+		}
 		return 1;
 	}
 	else
