@@ -471,7 +471,6 @@ int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeff
 		{
 			if (abs(x - projectiles[i].getX()) <= projectiles[i].getRadius() + width)
 			{
-				cout << "투사체 삭제1" << endl;
 				projectiles.erase(projectiles.begin() + i);
 				check = 1;
 				break;
@@ -481,7 +480,6 @@ int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeff
 		{
 			if (abs(y - projectiles[i].getY()) <= projectiles[i].getRadius() + height)
 			{
-				cout << "투사체 삭제2" << endl;
 				projectiles.erase(projectiles.begin() + i);
 				check = 1;
 				break;
@@ -625,7 +623,6 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	{
 		leftactionframe = actionframe;
 		pattern = Randomize(1, 4);
-		cout << pattern << endl;
 	}
 
 	if (route.size() == 0)
@@ -673,7 +670,6 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				y = route[0].y * GridYSize;
 				if (route.size() > 1)
 				{
-					cout << "ASTAR 삭제" << endl;
 					route.erase(route.begin());
 				}
 			}
@@ -792,7 +788,6 @@ void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gr
 	{
 		if (dangerzones[i].getleftframe() <= 0)
 		{
-			cout << "레드존 삭제" << endl;
 			dangerzones.erase(dangerzones.begin() + i);
 			i = -1;
 		}
@@ -915,7 +910,6 @@ void Monster::CheckProjectilesOutofAreaorTime(RECT& rectView)
 			projectiles[i].getY() > rectView.bottom
 			|| projectiles[i].getLeftProjectileFrame() == 0)
 		{
-			cout << "투사체 삭제3" << endl;
 			projectiles.erase(projectiles.begin() + i);
 			i = -1;
 		}

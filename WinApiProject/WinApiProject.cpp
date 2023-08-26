@@ -467,7 +467,6 @@ void Update()
             {
                 if (damagetexts[i].getLeftFrame() <= 0)
                 {
-                    cout << "텍스트 삭제" << endl;
                     damagetexts.erase(damagetexts.begin() + i);
                     i = -1;
                 }
@@ -491,7 +490,6 @@ void Update()
             {
                 if (animationeffects[i].getSpriteX() >= 11)
                 {
-                    cout << "애니메이션 효과 삭제" << endl;
                     animationeffects.erase(animationeffects.begin() + i);
                     i = -1;
                 }
@@ -751,7 +749,7 @@ void MonsterSystem(vector<POINT>& route)
     if (patternmode == 0)
     {
         monster->normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks, animationeffects);
-        if (timer >= 60)
+        if (timer >= 1)
         {
             patternmode = 1;
             monster->clearDangerZone();

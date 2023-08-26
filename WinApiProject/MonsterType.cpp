@@ -58,10 +58,7 @@ void MonsterType2::normalMode(vector<POINT>& route, int GridXSize, int GridYSize
 				x = route[0].x * GridXSize;
 				y = route[0].y * GridYSize;
 				if (route.size() > 1)
-				{
-					cout << "ASTAR 삭제" << endl;
 					route.erase(route.begin());
-				}
 			}
 			else
 			{
@@ -125,8 +122,84 @@ void MonsterType2::normalMode(vector<POINT>& route, int GridXSize, int GridYSize
 
 void MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects)
 {
+	for (int i = 0; i < dangerzones.size(); i++)
+	{
+		dangerzones[i].checkframe(projectiles, animationeffects);
+	}
+
+
+	for (int i = 0; i < dangerzones.size(); i++)
+	{
+		if (dangerzones[i].getleftframe() <= 0)
+		{
+			cout << "레드존 삭제" << endl;
+			dangerzones.erase(dangerzones.begin() + i);
+			i = -1;
+		}
+	}
+
+
+	moveProjectilesPos();
+	CheckProjectilesOutofAreaorTime(rectView);
+
+	if (patternstart == 0)
+	{
+		leftpatternprogress = patternprogress;
+		walking = 0;
+	}
+	if (leftpatternprogress >= patternprogress - 100)
+	{
+		if (leftpatternprogress % 25 == 0)
+		{
+			int xrand = Randomize(1, 3);
+			int yrand = Randomize(1, 3);
+			while (xrand == 1 && yrand == 1)
+			{
+				xrand = Randomize(1, 3);
+				yrand = Randomize(1, 3);
+			}
+			for (int i = 0; i < 3; i++)
+			{
+				DangerZone dangerzone(30, 0, 1);
+				if(xrand == 1)
+					dangerzone.setX(Grids.x / 2 * GridXSize);
+				else if(xrand == 2)
+					dangerzone.setX(GridXSize * ((2 - i) * 8) + GridXSize * 3);
+				else
+					dangerzone.setX(GridXSize * (i * 8) + GridXSize * 3);
+				if(yrand == 1)
+					dangerzone.setY(Grids.y / 2 * GridYSize);
+				else if(yrand == 2)
+					dangerzone.setY(GridYSize * ((2 - i) * 8) + GridYSize * 3);
+				else
+					dangerzone.setY(GridYSize * (i * 8) + GridYSize * 3);
+				dangerzone.setRadius(100);
+				dangerzone.activatezone();
+
+				dangerzones.push_back(dangerzone);
+
+				cout << xrand << " " << yrand << endl;
+			}
+		}
+	}
+	else if (leftpatternprogress >= patternprogress - 200)
+	{
+		if (leftpatternprogress % 30 == 0)
+		{
+			Monster monster;
+			monster.setLife(20);
+			monster.setMaxLife(20);
+			monster.setSizeX(GridXSize);
+			monster.setSizeY(GridYSize);
+			monster.setX(Randomize(2, Grids.x - 2) * GridXSize);
+			monster.setY(Randomize(2, Grids.y - 2) * GridYSize);
+			minimonsters.push_back(monster);
+		}
+	}
+	leftpatternprogress--;
 }
 
 void MonsterType2::groggyMode()
 {
 }
+

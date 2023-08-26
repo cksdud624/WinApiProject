@@ -185,7 +185,6 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 		{
 			if (move.x == openpoints[i].x && move.y == openpoints[i].y)
 			{
-				cout << "openpoint »èÁ¦" << endl;
 				openpoints.erase(openpoints.begin() + i);
 				break;
 			}

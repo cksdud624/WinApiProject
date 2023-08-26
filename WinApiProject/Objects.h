@@ -230,6 +230,7 @@ public:
 	void setWalking(int walking) { this->walking = walking; }
 	void setPatternTime(time_t patterntime) { this->patterntime = patterntime; }
 	void setGroggy(int groggy) { this->groggy = groggy; }
+	void setMaxLife(int maxlife) { this->maxlife = maxlife; }
 
 
 	//투사체 이동
