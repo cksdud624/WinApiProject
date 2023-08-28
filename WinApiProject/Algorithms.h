@@ -47,5 +47,5 @@ private:
 public:
 	void Init(int gridx, int gridy);
 
-	vector<POINT> Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks);
+	vector<POINT> Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks, int size);
 };

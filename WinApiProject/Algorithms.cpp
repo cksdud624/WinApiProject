@@ -12,7 +12,7 @@ void Astar::Init(int gridx, int gridy)
 	this->gridy = gridy;
 }
 
-vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks)
+vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridXSize, int GridYSize, vector<Block>& blocks, int size)
 {
 	vector<POINT> route;
 	vector<POINT> openpoints;
@@ -32,9 +32,9 @@ vector<POINT> Astar::Route(int startx, int starty, int endx, int endy, int GridX
 	}
 	for (int i = 0; i < blocks.size(); i++)
 	{
-		for (int a = -1; a <= 1; a++)
+		for (int a = -size; a <= size; a++)
 		{
-			for (int b = -1; b <= 1; b++)
+			for (int b = -size; b <= size; b++)
 			{
 				grids[(blocks[i].getX() + a) * gridx + (blocks[i].getY() + b)].setBlock(1);
 			}

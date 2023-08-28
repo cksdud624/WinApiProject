@@ -1,5 +1,5 @@
 #include "MonsterType.h"
-
+#include "Algorithms.h"
 #include <iostream>
 
 void MonsterType2::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT& rectView, Player& player, const POINT grids, vector<Block>& blocks, vector<AnimationEffect>& animationeffects)
@@ -120,8 +120,10 @@ void MonsterType2::normalMode(vector<POINT>& route, int GridXSize, int GridYSize
 	}
 }
 
-void MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects)
+int MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects, int monsters)
 {
+	int check = 0;
+	int maintain = 0;
 	for (int i = 0; i < dangerzones.size(); i++)
 	{
 		dangerzones[i].checkframe(projectiles, animationeffects);
@@ -161,15 +163,15 @@ void MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POI
 			for (int i = 0; i < 3; i++)
 			{
 				DangerZone dangerzone(30, 0, 1);
-				if(xrand == 1)
+				if (xrand == 1)
 					dangerzone.setX(Grids.x / 2 * GridXSize);
-				else if(xrand == 2)
+				else if (xrand == 2)
 					dangerzone.setX(GridXSize * ((2 - i) * 8) + GridXSize * 3);
 				else
 					dangerzone.setX(GridXSize * (i * 8) + GridXSize * 3);
-				if(yrand == 1)
+				if (yrand == 1)
 					dangerzone.setY(Grids.y / 2 * GridYSize);
-				else if(yrand == 2)
+				else if (yrand == 2)
 					dangerzone.setY(GridYSize * ((2 - i) * 8) + GridYSize * 3);
 				else
 					dangerzone.setY(GridYSize * (i * 8) + GridYSize * 3);
@@ -177,8 +179,6 @@ void MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POI
 				dangerzone.activatezone();
 
 				dangerzones.push_back(dangerzone);
-
-				cout << xrand << " " << yrand << endl;
 			}
 		}
 	}
@@ -186,20 +186,36 @@ void MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POI
 	{
 		if (leftpatternprogress % 30 == 0)
 		{
-			Monster monster;
-			monster.setLife(20);
-			monster.setMaxLife(20);
-			monster.setSizeX(GridXSize);
-			monster.setSizeY(GridYSize);
-			monster.setX(Randomize(2, Grids.x - 2) * GridXSize);
-			monster.setY(Randomize(2, Grids.y - 2) * GridYSize);
-			minimonsters.push_back(monster);
+			check = 1;
+			tempprogress = 20;
 		}
 	}
-	leftpatternprogress--;
-}
+	else
+	{
+		if (monsters > 0)
+			maintain = 1;
 
-void MonsterType2::groggyMode()
-{
-}
+		if (tempprogress <= 0)
+		{
+			DangerZone dangerzone(30, 0, 1);
+			dangerzone.setX(player.getX());
+			dangerzone.setY(player.getY());
+			dangerzone.setRadius(100);
+			dangerzone.activatezone();
 
+			dangerzones.push_back(dangerzone);
+			tempprogress = 30;
+		}
+		else
+			tempprogress--;
+
+	}
+
+	if(maintain == 0)
+		leftpatternprogress--;
+
+	cout << leftpatternprogress << endl;
+	if (check == 1)
+		return 1;
+	return 0;
+}

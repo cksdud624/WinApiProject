@@ -12,6 +12,9 @@ using namespace std;
 
 Player::Player()
 {
+	x = 400;
+	y = 600;
+
 	spriteX = 1;
 	spriteY = 3;
 	frame = 3;
@@ -555,7 +558,7 @@ void Arrow::movePos()
 
 Monster::Monster()
 {
-	x = 500;
+	x = 400;
 	y = 100;
 	sizex = 120;
 	sizey = 120;
@@ -631,54 +634,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 
 	if (pattern <= 2)
 	{
-		walking = 1;
-		if (route.size() > 0)
-		{
-			int xlen = x - route[0].x * GridXSize;
-			int ylen = y - route[0].y * GridYSize;
-
-			int xdirection = 0;
-			int ydirection = 0;
-
-			if (xlen > 0)
-				xdirection = 1;
-			else if (xlen < 0)
-				xdirection = -1;
-
-			if (ylen > 0)
-				ydirection = 1;
-			else if (ylen < 0)
-				ydirection = -1;
-
-
-			if (ydirection == 1)
-				spriteY = 3;
-			else if (ydirection == -1)
-				spriteY = 0;
-			else
-			{
-				if (xdirection == 1)
-					spriteY = 1;
-				else
-					spriteY = 2;
-			}
-
-
-			if (abs(xlen) <= 5 && abs(ylen) <= 5)
-			{
-				x = route[0].x * GridXSize;
-				y = route[0].y * GridYSize;
-				if (route.size() > 1)
-				{
-					route.erase(route.begin());
-				}
-			}
-			else
-			{
-				x -= 5 * xdirection;
-				y -= 5 * ydirection;
-			}
-		}
+		ChasePlayer(route, GridXSize, GridYSize);
 	}
 	else if (pattern == 3)
 	{
@@ -774,7 +730,7 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 	}
 }
 
-void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects)
+int Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects, int monsters)
 {
 
 
@@ -886,6 +842,7 @@ void Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gr
 
 	}
 	leftpatternprogress--;
+	return 0;
 }
 
 int Monster::Randomize(int min, int max)
@@ -923,6 +880,58 @@ void Monster::moveProjectilesPos()
 		projectiles[i].movePos();
 	}
 
+}
+
+void Monster::ChasePlayer(vector<POINT>& route, int GridXSize, int GridYSize)
+{
+	walking = 1;
+	if (route.size() > 0)
+	{
+		int xlen = x - route[0].x * GridXSize;
+		int ylen = y - route[0].y * GridYSize;
+
+		int xdirection = 0;
+		int ydirection = 0;
+
+		if (xlen > 0)
+			xdirection = 1;
+		else if (xlen < 0)
+			xdirection = -1;
+
+		if (ylen > 0)
+			ydirection = 1;
+		else if (ylen < 0)
+			ydirection = -1;
+
+
+		if (ydirection == 1)
+			spriteY = 3;
+		else if (ydirection == -1)
+			spriteY = 0;
+		else
+		{
+			if (xdirection == 1)
+				spriteY = 1;
+			else
+				spriteY = 2;
+		}
+
+
+		if (abs(xlen) <= 5 && abs(ylen) <= 5)
+		{
+			x = route[0].x * GridXSize;
+			y = route[0].y * GridYSize;
+			if (route.size() > 1)
+			{
+				route.erase(route.begin());
+			}
+		}
+		else
+		{
+			x -= 5 * xdirection;
+			y -= 5 * ydirection;
+		}
+	}
 }
 
 int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects)
@@ -1084,6 +1093,8 @@ void Monster::groggyMode()
 	spriteY = 4;
 	groggy = 1;
 	leftframe = frame;
+	projectiles.clear();
+	dangerzones.clear();
 }
 
 void Monster::drawProjectiles(Graphics& g, Image** effect,Image*& projectile, Image*& projectile2)

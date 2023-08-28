@@ -196,8 +196,10 @@ enum GamePage
 };
 
 #define STAGECOUNT 2
+#define PATTERNTIME 60
 
 int CurrentStage = 0;
+int ClearedStage = 0;
 
 GamePage gamepage = LOGO;
 //게임 화면
@@ -220,9 +222,11 @@ int mouseposX = -100;
 int mouseposY = -100;
 
 //플레이어
-Player player;
+Player* player;
 //몬스터
 Monster* monster;
+vector<Monster> minimonsters;
+vector<vector<POINT>> routes;
 
 Button logoButton;
 Button stageselectButton[STAGECOUNT];
@@ -239,9 +243,10 @@ HBITMAP hBit, oldBit;
 
 //이미지
 Image* logo;
+Image* logobackground;
 Image* buttonimage;
 Image* stageselect;
-Image* stageselectbutton;
+Image* stageselectbutton[2];
 Image* stageinfo;
 
 Image* playerAction;
@@ -251,6 +256,7 @@ Image* UIImage;
 Image* UIBackground;
 Image* arrowAction;
 Image* bossAction[2];
+Image* monsterAction;
 Image* effects[3];
 Image* terrain;
 Image* map;
@@ -316,13 +322,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GridXSize = rectView.right / Grids.x;
         GridYSize = rectView.bottom / Grids.y;
 
-        player.setX(rectView.right / 2);
-        player.setY(rectView.bottom / 2);
-
         logo = Image::FromFile(L"images/logo.png");
+        logobackground = Image::FromFile(L"images/logobackground.png");
         buttonimage = Image::FromFile(L"images/button.png");
         stageselect = Image::FromFile(L"images/stageselect.png");
-        stageselectbutton = Image::FromFile(L"images/circlebutton.png");
         playerAction = Image::FromFile(L"images/player.png");
         swordAction = Image::FromFile(L"images/sword.png");
         spearAction = Image::FromFile(L"images/spear.png");
@@ -337,11 +340,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ready = Image::FromFile(L"images/ready.png");
         fight = Image::FromFile(L"images/fight.png");
         gameover = Image::FromFile(L"images/gameover.png");
-        stageclear = Image::FromFile(L"images/gameclear.png");
+        stageclear = Image::FromFile(L"images/stageclear.png");
         items = Image::FromFile(L"images/items.png");
         stageinfo = Image::FromFile(L"images/stageinfo.png");
+        monsterAction = Image::FromFile(L"images/monster1.png");
 
         TCHAR temp[50];
+
+        for (int i = 0; i < 2; i++)
+        {
+            _stprintf_s(temp, L"images/circlebutton%d.png", i + 1);
+            stageselectbutton[i] = Image::FromFile(temp);
+        }
 
         for (int i = 0; i < 3; i++)
         {
@@ -449,7 +459,11 @@ void Update()
             static int frame = 0;
             if (frame <= 0)
             {
-                route = astar.Route(monster->getX(), monster->getY(), player.getX(), player.getY(), GridXSize, GridYSize, blocks);
+                route = astar.Route(monster->getX(), monster->getY(), player->getX(), player->getY(), GridXSize, GridYSize, blocks, 1);
+                for (int i = 0; i < minimonsters.size(); i++)
+                {
+                    routes[i] = astar.Route(minimonsters[i].getX(), minimonsters[i].getY(), player->getX(), player->getY(), GridXSize, GridYSize, blocks, 0);
+                }
                 frame = 30;
             }
             else
@@ -460,7 +474,7 @@ void Update()
 
             for (int i = 0; i < damagetexts.size(); i++)
             {
-                damagetexts[i].update(player, *monster);
+                damagetexts[i].update(*player, *monster);
             }
 
             for (int i = 0; i < damagetexts.size(); i++)
@@ -477,13 +491,33 @@ void Update()
                 blocks[i].update();
             }
 
-            int hit = player.HitCheck(*monster, animationeffects);
-            int projhit = player.ProjHitCheck(*monster, animationeffects);
+            int hit = player->HitCheck(*monster, animationeffects);
+            int projhit = player->ProjHitCheck(*monster, animationeffects);
+            for (int i = 0; i < minimonsters.size(); i++)
+            {
+                player->HitCheck(minimonsters[i], animationeffects);
+                minimonsters[i].HitCheck(*player, arrows, animationeffects);
+            }
+
+
+            for (int i = 0; i < minimonsters.size(); i++)
+            {
+                if (minimonsters[i].getLife() <= 0)
+                {
+                    minimonsters.erase(minimonsters.begin() + i);
+                    routes.erase(routes.begin() + i);
+                    i = -1;
+                }
+            }
+
+
 
             if (patternmode == 1 && (hit > 0 || projhit > 0))
                 patternhit++;
 
-            int monhit = monster->HitCheck(player, arrows, animationeffects);
+
+
+            int monhit = monster->HitCheck(*player, arrows, animationeffects);
 
 
             for (int i = 0; i < animationeffects.size(); i++)
@@ -504,15 +538,15 @@ void Update()
                 {
                     damageText.setType(0);
                     damageText.setDamage(hit);
-                    damageText.setX(player.getX());
-                    damageText.setY(player.getY());
+                    damageText.setX(player->getX());
+                    damageText.setY(player->getY());
                 }
                 else if (projhit > 0)
                 {
                     damageText.setType(0);
                     damageText.setDamage(projhit);
-                    damageText.setX(player.getX());
-                    damageText.setY(player.getY());
+                    damageText.setX(player->getX());
+                    damageText.setY(player->getY());
                 }
                 else
                 {
@@ -525,7 +559,7 @@ void Update()
             }
         }
 
-        if (monster->getLife() <= 0 || player.getLife() <= 0)
+        if (monster->getLife() <= 0 || player->getLife() <= 0)
         {
             gamepage = STAGEEND;
             gamemanage = clock();
@@ -547,10 +581,14 @@ void Update()
         {
             if (stageselectButton[i].OnClickCircle(mouseposX, mouseposY) == 1)
             {
+                if (ClearedStage < i)
+                    return;
                 if (i == 0)
                     monster = new Monster;
                 else if (i == 1)
                     monster = new MonsterType2;
+
+                player = new Player;
 
                 CurrentStage = i + 1;
                 gamepage = STAGE;
@@ -569,6 +607,14 @@ void Update()
         blocks.clear();
         animationeffects.clear();
         damagetexts.clear();
+        minimonsters.clear();
+        routes.clear();
+        delete monster;
+        patternhit = 0;
+        timer = 0;
+        gamepage = STAGESELECT;
+        ClearedStage = CurrentStage;
+        item.setCount(1);
     }
     InvalidateRect(hWnd, NULL, FALSE);
 }
@@ -647,11 +693,25 @@ void DrawDoubleBuffering(HDC& hdc)
     }
     else if (gamepage == LOGO)
     {
-        rect.X = rectView.right / 4 - 80;
+        rect.X = 0;
+        rect.Y = 0;
+        rect.Width = rectView.right;
+        rect.Height = rectViewUI.bottom;
+        g.DrawImage(stageselect, rect);
+
+        rect.X = rectView.right / 4 - 120;
+        rect.Y = rectView.bottom / 4 - 70;
+        rect.Width = rectView.right - 150;
+        rect.Height = rectView.bottom / 5;
+
+        g.DrawImage(logobackground, rect);
+
+        rect.X = rectView.right / 4 - 50;
         rect.Y = rectView.bottom / 4 - 50;
         rect.Width = rectView.right / 1.5;
         rect.Height = rectView.bottom / 6;
         g.DrawImage(logo, rect);
+       
 
         logoButton.drawRectangleButton(g, buttonimage, L"Game Start");
     }
@@ -665,7 +725,10 @@ void DrawDoubleBuffering(HDC& hdc)
 
         for (int i = 0; i < STAGECOUNT; i++)
         {
-            stageselectButton[i].drawCircleButton(g, stageselectbutton);
+            if(i > ClearedStage)
+                stageselectButton[i].drawCircleButton(g, stageselectbutton[1]);
+            else
+                stageselectButton[i].drawCircleButton(g, stageselectbutton[0]);
             StringFormat stringFormat;
             stringFormat.SetAlignment(StringAlignmentCenter);
             FontFamily fontFamily(L"돋움");
@@ -674,7 +737,7 @@ void DrawDoubleBuffering(HDC& hdc)
             SolidBrush solidBrush(Color(255, 255, 255, 255));
             TCHAR temp[10];
             _stprintf_s(temp, L"Stage %d", i + 1);
-            g.DrawString(temp, -1, & font, pointF, & stringFormat, & solidBrush);
+            g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
         }
     }
     else if (gamepage == STAGEEND)
@@ -691,13 +754,15 @@ void DrawDoubleBuffering(HDC& hdc)
             rect.Width = 400;
             rect.Height = 100;
 
-            rect.X = rectView.right / 2 - 100;
+            rect.X = rectView.right / 2 - 200;
             rect.Y = rectView.bottom / 2 - 50;
 
-            if (player.getLife() <= 0)
+            if (player->getLife() <= 0)
                 g.DrawImage(gameover, rect);
             else
                 g.DrawImage(stageclear, rect);
+
+            UIDraw(g);
         }
     }
     BitBlt(hdc, 0, 0, rectView.right, rectViewUI.bottom, mem1dc, 0, 0, SRCCOPY);
@@ -727,12 +792,12 @@ void StartSetting(HDC& hdc)
 
 void PlayerSystem()
 {
-    player.changeWeapon(Weapontype);//무기 변경
-    player.movePos(PlayerMove());//플레이어 이동
-    player.correctPosition(rectView, blocks, GridXSize, GridYSize);//맵 밖으로 나가지 않게 함
-    player.spriteNFrame();//스프라이트와 프레임 설정
-    player.attackCollide(arrows);//공격 충돌 판정
-    player.useItem(item, animationeffects);
+    player->changeWeapon(Weapontype);//무기 변경
+    player->movePos(PlayerMove());//플레이어 이동
+    player->correctPosition(rectView, blocks, GridXSize, GridYSize);//맵 밖으로 나가지 않게 함
+    player->spriteNFrame();//스프라이트와 프레임 설정
+    player->attackCollide(arrows);//공격 충돌 판정
+    player->useItem(item, animationeffects);
 
     for (int i = 0; i < arrows.size(); i++)
     {
@@ -748,8 +813,8 @@ void MonsterSystem(vector<POINT>& route)
 
     if (patternmode == 0)
     {
-        monster->normalMode(route, GridXSize, GridYSize, rectView, player, Grids, blocks, animationeffects);
-        if (timer >= 1)
+        monster->normalMode(route, GridXSize, GridYSize, rectView, *player, Grids, blocks, animationeffects);
+        if (timer >= PATTERNTIME)
         {
             patternmode = 1;
             monster->clearDangerZone();
@@ -757,7 +822,7 @@ void MonsterSystem(vector<POINT>& route)
     }
     else if (patternmode == 1)
     {
-        monster->patternMode(rectView, GridXSize, GridYSize, Grids, player, animationeffects);
+        int patterncheck = monster->patternMode(rectView, GridXSize, GridYSize, Grids, *player, animationeffects, minimonsters.size());
         if (monster->getPatternStart() == 0)
         {
             for (int i = 0; i < blocks.size(); i++)
@@ -788,6 +853,25 @@ void MonsterSystem(vector<POINT>& route)
             }
             patternhit = 0;
         }
+
+        if (patterncheck == 1)
+        {
+            Monster minimonster;
+            minimonster.setX(minimonster.Randomize(2, Grids.x) * GridXSize);
+            minimonster.setY(minimonster.Randomize(2, Grids.y) * GridYSize);
+            minimonster.setMaxLife(20);
+            minimonster.setLife(20);
+            minimonster.setSizeX(GridXSize * 2);
+            minimonster.setSizeY(GridYSize * 2);
+            minimonsters.push_back(minimonster);
+            vector<POINT> temp;
+            routes.push_back(temp);
+        }
+
+        for (int i = 0; i < minimonsters.size(); i++)
+        {
+            minimonsters[i].ChasePlayer(routes[i], GridXSize, GridYSize);
+        }
     }
     else if (patternmode == 2)
     {
@@ -803,12 +887,12 @@ void MonsterSystem(vector<POINT>& route)
 
 void PlayerDraw(Graphics& g)
 {
-    player.action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
+    player->action(rect, g, playerAction, imageAtt);//플레이어 애니메이션
 
-    if (player.getWeaponType() == 1)
-        player.attack(rect, g, swordAction, arrowAction, arrows);//공격 애니메이션
+    if (player->getWeaponType() == 1)
+        player->attack(rect, g, swordAction, arrowAction, arrows);//공격 애니메이션
     else
-        player.attack(rect, g, spearAction, arrowAction, arrows);
+        player->attack(rect, g, spearAction, arrowAction, arrows);
 }
 
 void MonsterDraw(Graphics& g)
@@ -824,6 +908,11 @@ void MonsterDraw(Graphics& g)
     monster->action(rect, g, bossAction[CurrentStage - 1]);
     monster->drawProjectiles(g, effects, stone, flame);
     monster->drawDangerZones(g, mem1dc);
+
+    for (int i = 0; i < minimonsters.size(); i++)
+    {
+        minimonsters[i].action(rect, g, monsterAction);
+    }
 }
 
 void UISetting()
@@ -842,34 +931,41 @@ void UISetting()
         WeaponIcon[i].setSizeX(32);
         WeaponIcon[i].setSizeY(32);
         WeaponIcon[i].setPosX(0);
-        if(i == 1)
+        if (i == 1)
             WeaponIcon[i].setPosX(128);
         if (i == 2)
             WeaponIcon[i].setPosX(160);
         WeaponIcon[i].setPosY(0);
     }
 
-    Weapontype.setWidth(rectViewUI.bottom - rectViewUI.top - 45);
-    Weapontype.setHeight(rectViewUI.bottom - rectViewUI.top - 45);
-    Weapontype.setX(10);
-    Weapontype.setY((rectViewUI.bottom + rectViewUI.top) / 2 - Weapontype.getHeight() / 2 + 10);
-    Weapontype.setSizeX(32);
-    Weapontype.setSizeY(32);
-    Weapontype.setPosX(0);
-    Weapontype.setPosY(0);
+    {
+        Weapontype.setWidth(rectViewUI.bottom - rectViewUI.top - 45);
+        Weapontype.setHeight(rectViewUI.bottom - rectViewUI.top - 45);
+        Weapontype.setX(10);
+        Weapontype.setY((rectViewUI.bottom + rectViewUI.top) / 2 - Weapontype.getHeight() / 2 + 10);
+        Weapontype.setSizeX(32);
+        Weapontype.setSizeY(32);
+        Weapontype.setPosX(0);
+        Weapontype.setPosY(0);
+    }
 
-    logoButton.setX(rectView.right / 2);
-    logoButton.setY(rectView.bottom / 2 + 300);
-    logoButton.setWidth(200);
-    logoButton.setHeight(50);
+    {
+        logoButton.setX(rectView.right / 2);
+        logoButton.setY(rectView.bottom / 2 + 300);
+        logoButton.setWidth(200);
+        logoButton.setHeight(50);
+    }
+    {
+        stageselectButton[0].setX(400);
+        stageselectButton[0].setY(300);
+        stageselectButton[0].setRadius(30);
+    }
 
-    stageselectButton[0].setX(400);
-    stageselectButton[0].setY(300);
-    stageselectButton[0].setRadius(30);
-
-    stageselectButton[1].setX(500);
-    stageselectButton[1].setY(500);
-    stageselectButton[1].setRadius(30);
+    {
+        stageselectButton[1].setX(500);
+        stageselectButton[1].setY(500);
+        stageselectButton[1].setRadius(30);
+    }
 }
 
 void UIDraw(Graphics& g)
@@ -889,7 +985,7 @@ void UIDraw(Graphics& g)
         rect.Height = 16 * 2;
 
         g.DrawImage(UIBar[0], rect);
-        double leftlife = (double)player.getLife() / (double)player.getMaxLife();
+        double leftlife = (double)player->getLife() / (double)player->getMaxLife();
         rect.Width *= leftlife;
         g.DrawImage(UIBar[1], rect, 0, 0, UIBar[1]->GetWidth() * leftlife, UIBar[1]->GetHeight(), UnitPixel);
 
@@ -919,7 +1015,7 @@ void UIDraw(Graphics& g)
 
         _stprintf_s(text, L"%d", monster->getLife());
         g.DrawString(text, -1, &font, pointF, &stringFormat, &solidBrush);
-        _stprintf_s(text, L"%d", player.getLife());
+        _stprintf_s(text, L"%d", player->getLife());
         g.DrawString(text, -1, &font, pointF2, &stringFormat, &solidBrush);
         rect.X = WeaponIcon[2].getX() + WeaponIcon[2].getWidth();
         rect.Y = WeaponIcon[2].getY();
@@ -955,7 +1051,7 @@ void UIDraw(Graphics& g)
 
         rect.X += 80;
         rect.Width = 50;
-        g.DrawImage(imagefont[1], rect);
+        g.DrawImage(imagefont[CurrentStage], rect);
     }
 
     {

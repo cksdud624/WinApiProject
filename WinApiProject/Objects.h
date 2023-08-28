@@ -225,12 +225,16 @@ public:
 	void setLife(int life) { this->life = life; }
 	void setSizeX(int sizex) { this->sizex = sizex; }
 	void setSizeY(int sizey) { this->sizey = sizey; }
+	void setSpriteX(int spriteX) { this->spriteX = spriteX; }
+	void setSpriteY(int spriteY) { this->spriteY = spriteY; }
 	void setProjectile(vector<Projectile> projectiles) { this->projectiles = projectiles; }
 	void setPatternStart(int patternstart) { this->patternstart = patternstart; }
 	void setWalking(int walking) { this->walking = walking; }
 	void setPatternTime(time_t patterntime) { this->patterntime = patterntime; }
 	void setGroggy(int groggy) { this->groggy = groggy; }
 	void setMaxLife(int maxlife) { this->maxlife = maxlife; }
+
+	void ChasePlayer(vector<POINT>& route, int GridXSize, int GridYSize);
 
 
 	//투사체 이동
@@ -242,9 +246,9 @@ public:
 	virtual void normalMode(vector<POINT>& route, int GridXSize, int GridYSize, RECT &rectView, Player &player, const POINT grids, vector<Block>& blocks
 	, vector<AnimationEffect>& animationeffects);
 	//패턴 상태
-	virtual void patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects);
+	virtual int patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Grids, Player& player, vector<AnimationEffect>& animationeffects, int monsters);
 	//그로기 상태
-	virtual void groggyMode();
+	void groggyMode();
 	int Randomize(int min, int max);
 
 	//투사체가 맵 밖으로 나가면 삭제
