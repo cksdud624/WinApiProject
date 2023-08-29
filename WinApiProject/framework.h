@@ -28,5 +28,9 @@
 #include "functions.h"
 #include "Items.h"
 #include "MonsterType.h"
+#include "SoundManager.h"
+
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 #pragma comment(lib, "gdiplus.lib") 

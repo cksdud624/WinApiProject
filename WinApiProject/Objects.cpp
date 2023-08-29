@@ -7,6 +7,8 @@
 #include <cmath>
 #include <ctime>
 #include <random>
+#include "SoundManager.h"
+#include <tchar.h>
 
 using namespace std;
 
@@ -209,8 +211,13 @@ void Player::attackCollide(vector<Arrow>& arrows)
 		{
 			attackframe = 4;
 			leftAttackCoolDown = attackCoolDown;
-
-			if (weapon == 2)
+			if (weapon == 1)
+			{
+				SoundManager* sm = SoundManager::getInstance();
+				sm->playSound(L"sounds/sword.wav");
+				//sm->PlayWav(L"sounds/sword.wav");
+			}
+			else if (weapon == 2)
 			{
 				Arrow arrow;
 				if (mdirection == 1)
@@ -236,6 +243,14 @@ void Player::attackCollide(vector<Arrow>& arrows)
 				arrow.setHeight(30);
 				arrow.setNewCollider();
 				arrows.push_back(arrow);
+
+				SoundManager* sm = SoundManager::getInstance();
+				sm->playSound(L"sounds/arrow.wav");;
+			}
+			else if (weapon == 3)
+			{
+				SoundManager* sm = SoundManager::getInstance();
+				sm->playSound(L"sounds/spear.wav");
 			}
 		}
 	}
@@ -386,6 +401,8 @@ void Player::useItem(Item& item, vector<AnimationEffect>& animationeffects)
 						life = maxlife;
 					AnimationEffect animationeffect(x - width * 2, y - height * 2, width * 4, height * 4, 0, 6, 2);
 					animationeffects.push_back(animationeffect);
+					SoundManager* sm = SoundManager::getInstance();
+					sm->playSound(L"sounds/heal.wav");
 				}
 			}
 		}
@@ -456,6 +473,8 @@ int Player::HitCheck(Monster& monster, vector<AnimationEffect>& animationeffects
 		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 		animationeffects.push_back(animationeffect);
 		life -= 5;
+		SoundManager* sm = SoundManager::getInstance();
+		sm->playSound(L"sounds/hit.wav");
 		return 5;
 	}
 	return 0;
@@ -496,6 +515,8 @@ int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeff
 		life -= 5;
 		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 		animationeffects.push_back(animationeffect);
+		SoundManager* sm = SoundManager::getInstance();
+		sm->playSound(L"sounds/hit.wav");
 		return 5;
 	}
 	return 0;
@@ -1067,7 +1088,7 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 		}
 		else if (player.getWeaponType() == 2)
 		{
-			damage = 5;
+			damage = 500;
 		}
 		else if (player.getWeaponType() == 3)
 		{
@@ -1077,6 +1098,8 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 		if (groggy == 1)
 			damage *= 2;
 		life -= damage;
+		SoundManager* sm = SoundManager::getInstance();
+		sm->playSound(L"sounds/hit.wav");
 		return damage;
 	}
 	return 0;

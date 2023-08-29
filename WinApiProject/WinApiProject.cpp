@@ -1,6 +1,6 @@
 ﻿// WinApiProject.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
-
+#define _CRT_SECURE_NO_WARNINGS
 #include "framework.h"
 #include "WinApiProject.h"
 
@@ -25,8 +25,6 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console") 
 
 #endif
-
-
 
 //함수
 void Update();
@@ -76,10 +74,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     clock_t oldframetime = clock();
 
     int framecheck = 0;
-
+    SoundManager* sm = SoundManager::getInstance();
     // 기본 메시지 루프입니다:
     while (true)
     {
+        if (sm->soundtypes.size() > 0)
+        {
+            wchar_t temp[50];
+            _tcscpy(temp, L"sounds/sword.wav");
+            sm->LoadWav(temp);
+            sm->soundtypes.erase(sm->soundtypes.begin());
+        }
+
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             if (msg.message == WM_QUIT)
@@ -97,13 +103,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             newtime = newframetime = clock();
             if (newtime - oldtime >= 34)
             {
+                Update();
                 oldtime = newtime;
                 framecheck++;
-                Update();
             }
             if (newframetime - oldframetime >= 34 * 30)
             {
                 oldframetime = newframetime;
+                cout << framecheck << endl;
                 framecheck = 0;
             }
 
@@ -186,6 +193,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 // 
+
+
 enum GamePage
 {
     LOGO,
@@ -385,6 +394,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
 
         tbrush = new TextureBrush(map);
+
+
+        SoundManager* sm = SoundManager::getInstance();
+        sm->Init(hWnd);
     }
         break;
     case WM_COMMAND:
@@ -441,6 +454,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 void Update()
 {
+
     if (gamepage == STAGE)
     {
         if (clock() - gamemanage < 2500)
@@ -814,7 +828,7 @@ void MonsterSystem(vector<POINT>& route)
     if (patternmode == 0)
     {
         monster->normalMode(route, GridXSize, GridYSize, rectView, *player, Grids, blocks, animationeffects);
-        if (timer >= PATTERNTIME)
+        if (timer >= PATTERNTIME - 59)
         {
             patternmode = 1;
             monster->clearDangerZone();

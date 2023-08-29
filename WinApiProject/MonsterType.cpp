@@ -213,8 +213,6 @@ int MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POIN
 
 	if(maintain == 0)
 		leftpatternprogress--;
-
-	cout << leftpatternprogress << endl;
 	if (check == 1)
 		return 1;
 	return 0;
