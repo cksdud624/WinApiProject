@@ -254,7 +254,7 @@ public:
 	//투사체가 맵 밖으로 나가면 삭제
 	void CheckProjectilesOutofAreaorTime(RECT& rectView);
 	//몬스터 피격 판정
-	int HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects);
+	int HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects, int& special);
 	//투사체를 그림
 	void drawProjectiles(Graphics& g, Image** effect, Image*& projectile, Image*& projectile2);
 	//위험 구역을 그림

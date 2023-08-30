@@ -9,6 +9,7 @@
 #include <random>
 #include "SoundManager.h"
 #include <tchar.h>
+#include "CSound.h"
 
 using namespace std;
 
@@ -46,7 +47,11 @@ void Player::movePos(int pos)
 	if (pcount <= 0)
 	{
 		if (GetKeyState(VK_SHIFT) < 0)
+		{
 			pcount = 10;
+			SoundManager* sm = SoundManager::getInstance();
+			sm->playSound("sounds/dash.wav");
+		}
 		else
 			mpos = pos;
 	}
@@ -214,8 +219,7 @@ void Player::attackCollide(vector<Arrow>& arrows)
 			if (weapon == 1)
 			{
 				SoundManager* sm = SoundManager::getInstance();
-				sm->playSound(L"sounds/sword.wav");
-				//sm->PlayWav(L"sounds/sword.wav");
+				sm->playSound("sounds/sword.wav");
 			}
 			else if (weapon == 2)
 			{
@@ -245,12 +249,12 @@ void Player::attackCollide(vector<Arrow>& arrows)
 				arrows.push_back(arrow);
 
 				SoundManager* sm = SoundManager::getInstance();
-				sm->playSound(L"sounds/arrow.wav");;
+				sm->playSound("sounds/arrow.wav");;
 			}
 			else if (weapon == 3)
 			{
 				SoundManager* sm = SoundManager::getInstance();
-				sm->playSound(L"sounds/spear.wav");
+				sm->playSound("sounds/spear.wav");
 			}
 		}
 	}
@@ -402,7 +406,7 @@ void Player::useItem(Item& item, vector<AnimationEffect>& animationeffects)
 					AnimationEffect animationeffect(x - width * 2, y - height * 2, width * 4, height * 4, 0, 6, 2);
 					animationeffects.push_back(animationeffect);
 					SoundManager* sm = SoundManager::getInstance();
-					sm->playSound(L"sounds/heal.wav");
+					sm->playSound("sounds/heal.wav");
 				}
 			}
 		}
@@ -474,7 +478,7 @@ int Player::HitCheck(Monster& monster, vector<AnimationEffect>& animationeffects
 		animationeffects.push_back(animationeffect);
 		life -= 5;
 		SoundManager* sm = SoundManager::getInstance();
-		sm->playSound(L"sounds/hit.wav");
+		sm->playSound("sounds/hit.wav");
 		return 5;
 	}
 	return 0;
@@ -516,7 +520,7 @@ int Player::ProjHitCheck(Monster &monster, vector<AnimationEffect>& animationeff
 		AnimationEffect animationeffect(x - 30, y - 30, 60, 60, 0, 12, 1);
 		animationeffects.push_back(animationeffect);
 		SoundManager* sm = SoundManager::getInstance();
-		sm->playSound(L"sounds/hit.wav");
+		sm->playSound("sounds/hit.wav");
 		return 5;
 	}
 	return 0;
@@ -690,6 +694,9 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				projectile.setAngle(45 * i + 45 + angle);
 				projectiles.push_back(projectile);
 			}
+
+			SoundManager* sm = SoundManager::getInstance();
+			sm->playSound("sounds/stone.wav");
 		}
 	}
 	else if (pattern == 4)
@@ -720,6 +727,8 @@ void Monster::normalMode(vector<POINT>& route, int GridXSize, int GridYSize, REC
 				block.setX(pointx);
 				block.setY(pointy);
 				blocks.push_back(block);
+				SoundManager* sm = SoundManager::getInstance();
+				sm->playSound("sounds/block.wav");
 			}
 		}
 	}
@@ -955,7 +964,7 @@ void Monster::ChasePlayer(vector<POINT>& route, int GridXSize, int GridYSize)
 	}
 }
 
-int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects)
+int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEffect>& animationeffects, int& special)
 {
 	POINT* attackpoints = player.getAttackPoints();
 	POINT monsterCollider[4] = { {x - sizex / 2, y - sizey / 2},
@@ -1082,24 +1091,25 @@ int Monster::HitCheck(Player& player, vector<Arrow>& arrows, vector<AnimationEff
 		arrowcheck == 1)
 	{
 		int damage = 0;
-		if (player.getWeaponType() == 1)
+		if (arrowcheck == 1)
+		{
+			damage = 5;
+		}
+		else if (player.getWeaponType() == 1)
 		{
 			damage = 15;
-		}
-		else if (player.getWeaponType() == 2)
-		{
-			damage = 500;
 		}
 		else if (player.getWeaponType() == 3)
 		{
 			damage = 10;
+			special = 1;
 		}
 
 		if (groggy == 1)
 			damage *= 2;
 		life -= damage;
 		SoundManager* sm = SoundManager::getInstance();
-		sm->playSound(L"sounds/hit.wav");
+		sm->playSound("sounds/hit.wav");
 		return damage;
 	}
 	return 0;
@@ -1236,6 +1246,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 	leftframe--;
 	if (leftframe <= 0)
 	{
+		SoundManager* sm = SoundManager::getInstance();
 		if (zonetype == 0)
 		{
 			if (variation == 0)//stage1
@@ -1252,6 +1263,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 
 				AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 1);
 				animationeffects.push_back(animationeffect);
+				sm->playSound("sounds/dangerzone.wav");
 			}
 			else if (variation == 1)//stage2
 			{
@@ -1278,6 +1290,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 
 				AnimationEffect animationeffect(x - radius / 2, y - radius / 2, radius, radius, 0, 9, 3);
 				animationeffects.push_back(animationeffect);
+				sm->playSound("sounds/dangerzone.wav");
 			}
 		}
 		else if (zonetype == 1)
@@ -1291,6 +1304,7 @@ int DangerZone::checkframe(vector<Projectile>& projectiles, vector<AnimationEffe
 			projectile.setType(2);
 
 			projectiles.push_back(projectile);
+			sm->playSound("sounds/fire.wav");
 		}
 		return 1;
 	}

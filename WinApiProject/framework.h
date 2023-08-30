@@ -29,7 +29,7 @@
 #include "Items.h"
 #include "MonsterType.h"
 #include "SoundManager.h"
-
+#include "CSound.h"
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
 

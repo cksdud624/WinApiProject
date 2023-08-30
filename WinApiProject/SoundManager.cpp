@@ -1,32 +1,70 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "SoundManager.h"
 #include <iostream>
 #include <Windows.h>
 #include <tchar.h>
+#include <string>
 using namespace std;
 
-void SoundManager::Init(HWND& hWnd)
+void SoundManager::addSound(string newsound)
 {
-	this->hWnd = hWnd;
+	char tempch[100];
+	strcpy_s(tempch, newsound.c_str());
+	CSound* temp = new CSound(tempch, false);
+	sounds.push_back(temp);
+	names.push_back(newsound);
 }
 
-void SoundManager::LoadWav(LPCTSTR wav)
+void SoundManager::playSound(string sound)
 {
-	DWORD Result;
-	MCI_OPEN_PARMS mciOpenParms;
-	MCI_PLAY_PARMS mciPlayParms;
-	mciOpenParms.lpstrElementName = wav;
-	mciOpenParms.lpstrDeviceType = L"WaveAudio";
-	UINT wDeviceID = 0;
-	Result = mciSendCommand(wDeviceID, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_ELEMENT, (DWORD)(LPVOID) & mciOpenParms);
+	thread t([this, sound]() {
+		this->playThread(sound);
+		});
 
-	wDeviceID = mciOpenParms.wDeviceID;
+	t.join();
+}
 
-	mciPlayParms.dwCallback = (DWORD)hWnd;
+void SoundManager::playThread(string sound)
+{
+	int index = -1;
+	for (int i = 0; i < sounds.size(); i++)
+	{
+		if (names[i] == sound)
+		{
+			index = i;
+			break;
+		}
+	}
 
+	sounds[index]->play();
+	sounds[index]->Update();
+}
 
-	mciSendCommand(wDeviceID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL);
-	mciSendCommand(wDeviceID, MCI_PLAY, MCI_NOTIFY, (DWORD)(LPVOID) & mciPlay);
+void SoundManager::lowerVolume(string sound)
+{
+	int index = -1;
+	for (int i = 0; i < sounds.size(); i++)
+	{
+		if (names[i] == sound)
+		{
+			index = i;
+			break;
+		}
+	}
 
+	sounds[index]->volumeDown();
+}
 
+void SoundManager::stopSound(string sound)
+{
+	int index = -1;
+	for (int i = 0; i < sounds.size(); i++)
+	{
+		if (names[i] == sound)
+		{
+			index = i;
+			break;
+		}
+	}
+
+	sounds[index]->stop();
 }

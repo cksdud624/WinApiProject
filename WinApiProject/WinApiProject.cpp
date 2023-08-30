@@ -74,18 +74,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     clock_t oldframetime = clock();
 
     int framecheck = 0;
-    SoundManager* sm = SoundManager::getInstance();
     // 기본 메시지 루프입니다:
     while (true)
     {
-        if (sm->soundtypes.size() > 0)
-        {
-            wchar_t temp[50];
-            _tcscpy(temp, L"sounds/sword.wav");
-            sm->LoadWav(temp);
-            sm->soundtypes.erase(sm->soundtypes.begin());
-        }
-
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             if (msg.message == WM_QUIT)
@@ -288,6 +279,7 @@ TextureBrush* tbrush;
 int flip = 0;
 int patternhit = 0;
 int patternmode = 0;
+int patterntimeadd = 0;
 
 int timer = 0;
 
@@ -396,8 +388,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         tbrush = new TextureBrush(map);
 
 
+        CSound::Init();
         SoundManager* sm = SoundManager::getInstance();
-        sm->Init(hWnd);
+
+        sm->addSound("sounds/sword.wav");
+        sm->addSound("sounds/stone.wav");
+        sm->addSound("sounds/spear.wav");
+        sm->addSound("sounds/hit.wav");
+        sm->addSound("sounds/heal.wav");
+        sm->addSound("sounds/fire.wav");
+        sm->addSound("sounds/arrow.wav");
+        sm->addSound("sounds/dangerzone.wav");
+        sm->addSound("sounds/block.wav");
+        sm->addSound("sounds/background.wav");
+        sm->addSound("sounds/dash.wav");
+        sm->addSound("sounds/click.wav");
+
     }
         break;
     case WM_COMMAND:
@@ -446,6 +452,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SelectObject(mem1dc, oldBit);
         DeleteDC(mem1dc);
         delete tbrush;
+        CSound::Release();
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -510,7 +517,8 @@ void Update()
             for (int i = 0; i < minimonsters.size(); i++)
             {
                 player->HitCheck(minimonsters[i], animationeffects);
-                minimonsters[i].HitCheck(*player, arrows, animationeffects);
+                int special = 0;
+                minimonsters[i].HitCheck(*player, arrows, animationeffects, special);
             }
 
 
@@ -530,9 +538,12 @@ void Update()
                 patternhit++;
 
 
+            int special = 0;
+            int monhit = monster->HitCheck(*player, arrows, animationeffects, special);
 
-            int monhit = monster->HitCheck(*player, arrows, animationeffects);
 
+            if (special == 1)
+                patterntimeadd++;
 
             for (int i = 0; i < animationeffects.size(); i++)
             {
@@ -587,6 +598,8 @@ void Update()
             gamepage = STAGESELECT;
             mouseposX = -100;
             mouseposY = -100;
+            SoundManager* sm = SoundManager::getInstance();
+            sm->playSound("sounds/click.wav");
         }
     }
     else if (gamepage == STAGESELECT)
@@ -607,16 +620,24 @@ void Update()
                 CurrentStage = i + 1;
                 gamepage = STAGE;
                 gamemanage = clock();
+
+                SoundManager* sm = SoundManager::getInstance();
+                sm->playSound("sounds/click.wav");
+                sm->playSound("sounds/background.wav");
             }
         }
     }
     else if (gamepage == STAGEEND)
     {
+        SoundManager* sm = SoundManager::getInstance();
+        sm->stopSound("sounds/background.wav");
         if (clock() - gamemanage >= 3000)
             gamepage = RESET;
     }
     else if (gamepage == RESET)
     {
+        if(monster->getLife() <= 0)
+            ClearedStage = CurrentStage;
         arrows.clear();
         blocks.clear();
         animationeffects.clear();
@@ -627,7 +648,7 @@ void Update()
         patternhit = 0;
         timer = 0;
         gamepage = STAGESELECT;
-        ClearedStage = CurrentStage;
+        patterntimeadd = 0;
         item.setCount(1);
     }
     InvalidateRect(hWnd, NULL, FALSE);
@@ -828,10 +849,11 @@ void MonsterSystem(vector<POINT>& route)
     if (patternmode == 0)
     {
         monster->normalMode(route, GridXSize, GridYSize, rectView, *player, Grids, blocks, animationeffects);
-        if (timer >= PATTERNTIME - 59)
+        if (timer + patterntimeadd >= PATTERNTIME)
         {
             patternmode = 1;
             monster->clearDangerZone();
+            patterntimeadd = 0;
         }
     }
     else if (patternmode == 1)
@@ -1077,7 +1099,7 @@ void UIDraw(Graphics& g)
         PointF pointF(380, rectViewUI.top + 45);
         SolidBrush solidBrush(Color(255, 0, 0, 0));
 
-        _stprintf_s(temp, L"%d", timer);
+        _stprintf_s(temp, L"%d", timer + patterntimeadd);
         g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
     }
 }
