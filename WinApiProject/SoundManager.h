@@ -19,6 +19,7 @@ private:
 	vector<string> names;
 public:
 	void addSound(string newsound);
+	void addBackground(string background);
 	void playSound(string sound);
 	void playThread(string sound);
 	void lowerVolume(string sound);

@@ -324,7 +324,7 @@ public:
 	AnimationEffect(double x, double y, int width, int height, int spriteX, int spriteY, int type);
 	void setType(int type) { this->type = type; }
 	int getSpriteX() { return spriteX; }
-	void drawAnimationEffect(Graphics& g, Image** effect);
+	void drawAnimationEffect(Graphics& g, Image** effect, int stage);
 };
 
 class DangerZone

@@ -15,7 +15,7 @@ HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
-
+/*
 #ifdef UNICODE
 
 #pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console") 
@@ -25,6 +25,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console") 
 
 #endif
+*/
 
 //함수
 void Update();
@@ -101,7 +102,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             if (newframetime - oldframetime >= 34 * 30)
             {
                 oldframetime = newframetime;
-                cout << framecheck << endl;
                 framecheck = 0;
             }
 
@@ -257,7 +257,7 @@ Image* UIBackground;
 Image* arrowAction;
 Image* bossAction[2];
 Image* monsterAction;
-Image* effects[3];
+Image* effects[4];
 Image* terrain;
 Image* map;
 Image* UIBar[3];
@@ -354,7 +354,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             stageselectbutton[i] = Image::FromFile(temp);
         }
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 4; i++)
         {
             _stprintf_s(temp, L"images/Effects/effect%d.png", i + 1);
             effects[i] = Image::FromFile(temp);
@@ -400,9 +400,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         sm->addSound("sounds/arrow.wav");
         sm->addSound("sounds/dangerzone.wav");
         sm->addSound("sounds/block.wav");
-        sm->addSound("sounds/background.wav");
+        sm->addBackground("sounds/background.wav");
         sm->addSound("sounds/dash.wav");
         sm->addSound("sounds/click.wav");
+        sm->addSound("sounds/mainsound.mp3");
+
+        sm->playSound("sounds/mainsound.mp3");
 
     }
         break;
@@ -622,6 +625,7 @@ void Update()
                 gamemanage = clock();
 
                 SoundManager* sm = SoundManager::getInstance();
+                sm->stopSound("sounds/mainsound.mp3");
                 sm->playSound("sounds/click.wav");
                 sm->playSound("sounds/background.wav");
             }
@@ -650,6 +654,8 @@ void Update()
         gamepage = STAGESELECT;
         patterntimeadd = 0;
         item.setCount(1);
+        SoundManager* sm = SoundManager::getInstance();
+        sm->playSound("sounds/mainsound.mp3");
     }
     InvalidateRect(hWnd, NULL, FALSE);
 }
@@ -677,13 +683,13 @@ void DrawDoubleBuffering(HDC& hdc)
 
         for (int i = 0; i < animationeffects.size(); i++)
         {
-            animationeffects[i].drawAnimationEffect(g, effects);
+            animationeffects[i].drawAnimationEffect(g, effects, CurrentStage);
         }
 
         for (int i = 0; i < damagetexts.size(); i++)
         {
             int damage = damagetexts[i].getDamage();
-            rect.Width = 34;
+            rect.Width = 30;
             rect.Height = 72;
             rect.Y = damagetexts[i].getY() - damagetexts[i].getOverLen() - rect.Height / 4;
             
@@ -699,8 +705,11 @@ void DrawDoubleBuffering(HDC& hdc)
 
             for (int j = digit.size() - 1; j >= 0; j--)
             {
-                rect.X = damagetexts[i].getX() - rect.Width / 2 + (digit.size() - 1 - j) * rect.Width / 2 - correctpos;
-                g.DrawImage(imagefont[digit[j]], rect, 0, 0, 46, 92, UnitPixel);
+                rect.X = damagetexts[i].getX() - rect.Width / 2 + (digit.size() - 1 - j) * rect.Width / 2 - correctpos - 3;
+                if(j == 0)
+                    g.DrawImage(imagefont[digit[j]], rect, 0, 0, 32, 92, UnitPixel);
+                else
+                    g.DrawImage(imagefont[digit[j]], rect, 0, 0, 46, 92, UnitPixel);
             }
         }
 
@@ -844,16 +853,15 @@ void PlayerSystem()
 
 void MonsterSystem(vector<POINT>& route)
 {
-    timer = time(NULL) - monster->getPatterntime();
+    timer = time(NULL) - monster->getPatterntime() + patterntimeadd;
 
     if (patternmode == 0)
     {
         monster->normalMode(route, GridXSize, GridYSize, rectView, *player, Grids, blocks, animationeffects);
-        if (timer + patterntimeadd >= PATTERNTIME)
+        if (timer >= PATTERNTIME)
         {
             patternmode = 1;
             monster->clearDangerZone();
-            patterntimeadd = 0;
         }
     }
     else if (patternmode == 1)
@@ -888,6 +896,7 @@ void MonsterSystem(vector<POINT>& route)
                 patternmode = 0;
             }
             patternhit = 0;
+            patterntimeadd = 0;
         }
 
         if (patterncheck == 1)
@@ -917,6 +926,7 @@ void MonsterSystem(vector<POINT>& route)
             monster->setPatternStart(0);
             patternmode = 0;
             monster->setGroggy(0);
+            patterntimeadd = 0;
         }
     }
 }
@@ -1099,7 +1109,7 @@ void UIDraw(Graphics& g)
         PointF pointF(380, rectViewUI.top + 45);
         SolidBrush solidBrush(Color(255, 0, 0, 0));
 
-        _stprintf_s(temp, L"%d", timer + patterntimeadd);
+        _stprintf_s(temp, L"%d", timer);
         g.DrawString(temp, -1, &font, pointF, &stringFormat, &solidBrush);
     }
 }

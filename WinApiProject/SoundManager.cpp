@@ -14,6 +14,15 @@ void SoundManager::addSound(string newsound)
 	names.push_back(newsound);
 }
 
+void SoundManager::addBackground(string background)
+{
+	char tempch[100];
+	strcpy_s(tempch, background.c_str());
+	CSound* temp = new CSound(tempch, true);
+	sounds.push_back(temp);
+	names.push_back(background);
+}
+
 void SoundManager::playSound(string sound)
 {
 	thread t([this, sound]() {

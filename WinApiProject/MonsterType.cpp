@@ -113,7 +113,6 @@ void MonsterType2::normalMode(vector<POINT>& route, int GridXSize, int GridYSize
 	{
 		if (dangerzones[i].getleftframe() <= 0)
 		{
-			cout << "레드존 삭제" << endl;
 			dangerzones.erase(dangerzones.begin() + i);
 			i = -1;
 		}
@@ -134,7 +133,6 @@ int MonsterType2::patternMode(RECT& rectView, int GridXSize, int GridYSize, POIN
 	{
 		if (dangerzones[i].getleftframe() <= 0)
 		{
-			cout << "레드존 삭제" << endl;
 			dangerzones.erase(dangerzones.begin() + i);
 			i = -1;
 		}

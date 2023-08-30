@@ -818,6 +818,9 @@ int Monster::patternMode(RECT& rectView, int GridXSize, int GridYSize, POINT Gri
 			projectile.setRadius(20);
 			projectile.setAngle(90 + angle);
 			projectiles.push_back(projectile);
+
+			SoundManager* sm = SoundManager::getInstance();
+			sm->playSound("sounds/stone.wav");
 		}
 	}
 	else if (leftpatternprogress >= patternprogress - 300)
@@ -1213,7 +1216,7 @@ AnimationEffect::AnimationEffect(double x, double y, int width, int height, int 
 	this->height = height;
 }
 
-void AnimationEffect::drawAnimationEffect(Graphics& g, Image** effect)
+void AnimationEffect::drawAnimationEffect(Graphics& g, Image** effect, int stage)
 {
 	Rect rect;
 	rect.X = x;
@@ -1221,7 +1224,12 @@ void AnimationEffect::drawAnimationEffect(Graphics& g, Image** effect)
 	rect.Width = width;
 	rect.Height = height;
 	if (type == 1)
-		g.DrawImage(effect[0], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	{
+		if(stage == 1)
+			g.DrawImage(effect[0], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+		else if(stage == 2)
+			g.DrawImage(effect[3], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
+	}
 	else if (type == 2)
 		g.DrawImage(effect[1], rect, 64 * (spriteX / 2), 64 * spriteY, 64, 64, UnitPixel);
 	else if (type == 3)

@@ -16,7 +16,6 @@ public:
 		if (!instance)
 		{
 			instance = new T;
-			cout << "»ı¼º" << endl;
 		}
 		return instance;
 	}
